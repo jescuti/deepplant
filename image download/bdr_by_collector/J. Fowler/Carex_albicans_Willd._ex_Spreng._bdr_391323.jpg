@@ -1,0 +1,35 @@
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
+ <head>
+ <title>Carex albicans Willd. ex Spreng.</title>
+ <link href="/viewers/static/images/zoom/zoom.css" rel="stylesheet">
+  <script type="text/javascript" src="//code.jquery.com/jquery-1.12.4.min.js"></script>
+  <script type="text/javascript" src="/viewers/static/images/zoom/openseadragon.min.js"></script>
+ </head>
+
+ <body>
+ <div class="osdArea">
+   <div id="contentDiv" class="openseadragon"></div>
+ </div>
+  <script type="text/javascript">
+    var viewer = OpenSeadragon({
+        id: "contentDiv",
+        prefixUrl: "/viewers/static/images/zoom/images/",
+        showNavigator: true,
+        visibilityRatio: 0.8,
+        showRotationControl: true,
+        
+        tileSources: [
+          
+          "https://repository.library.brown.edu/iiif/image/bdr:391323/info.json",
+          
+        ],
+    });
+    document.addEventListener("mouseleave", function(evt){
+            viewer.setMouseNavEnabled(false);
+            viewer.setMouseNavEnabled(true);
+    });
+  </script>
+ </body>
+
+</html>
