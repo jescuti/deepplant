@@ -16,13 +16,3 @@ The dataset is organized as follows:
 - Within each collector's subfolder, you will find the specimens that the collector has made, saved as JPG images
 - The Brown Digital Repository has over 72,000 images, this is only a subsample of those!
 
-  herbarium_images/
-    ├── Collector_1/
-    │   ├── specimen_001.jpg
-    │   ├── specimen_002.jpg
-    │   └── ...
-    ├── Collector_2/
-    │   ├── specimen_001.jpg
-    │   ├── specimen_002.jpg
-    │   └── ...
-    └── ...
