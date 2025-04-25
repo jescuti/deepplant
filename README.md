@@ -8,3 +8,21 @@ Our project's main goal is to assist the Brown Herbarium in reading and transcri
 
 ## Data
 After scraping data or calling the API for the Brown Digital Repository, we successfully downloaded 5,770 images totaling nearly 9.5GB. Due to GitHub's size constraints, these images couldn't be uploaded directly to the repository. However, they have been made available for download on Kaggle. You can access the dataset here: https://www.kaggle.com/datasets/ashleywoertz2/deep-plant
+
+### Data Organization
+The dataset is organized as follows:
+- The main folder is named `herbarium_images`
+- Inside this folder, there are 719 subfolders, each named after the specimen collector's name
+- Within each collector's subfolder, you will find the specimens that the collector has made, saved as JPG images
+- The Brown Digital Repository has over 72,000 images, this is only a subsample of those!
+
+  herbarium_images/
+    ├── Collector_1/
+    │   ├── specimen_001.jpg
+    │   ├── specimen_002.jpg
+    │   └── ...
+    ├── Collector_2/
+    │   ├── specimen_001.jpg
+    │   ├── specimen_002.jpg
+    │   └── ...
+    └── ...
