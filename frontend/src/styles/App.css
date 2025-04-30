@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css?family=Limelight');
+@import url('https://fonts.googleapis.com/css?family=Paytone+One');
+@import url('https://fonts.googleapis.com/css?family=Kadwa');
+@import url('https://fonts.googleapis.com/css?family=Kadwa'); 
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Deca&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cal+Sans&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+.limelight {
+    font-family: 'Limelight', serif;
+}
+
+.lexend-deca {
+  font-family: 'Lexend Deca', sans-serif;
+}
+
+.kadwa {
+  font-family: 'Kadwa'; 
+}
+
+.cal-sans {
+  font-family: "Cal Sans", sans-serif;
+  font-optical-sizing: auto;
+  font-weight: 400;
+  font-style: normal;
+}
+
+
+.App-header {
+  background-color: #282c34;
+  min-height: 20vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(1px + 2vmin);
+}
+
+.paytone-one {
+  font-family: 'Paytone One', sans-serif;
+}
+
+.kadwa {
+  font-family: 'Kadwa', serif;
+}
+
