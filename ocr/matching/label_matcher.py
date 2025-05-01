@@ -12,7 +12,7 @@ label_db = {
 def match_query_to_labels(
         query_tokens: list[str], 
         query_phrase: str, 
-        db: dict[str, dict[str, list[str] | str]], 
+        db, 
         top_k: int = 10
     ) -> list[tuple[str, float, float]]:
     '''
