@@ -68,7 +68,7 @@ def get_total_item_count():
         print(f"Error getting total item count: {e}")
         return 0
 
-def fetch_random_sample(sample_size = 100, min_index = 4401, base_dir = "herbarium_images"):
+def fetch_random_sample(sample_size = 100, min_index = 4401, base_dir = "test_images"):
     """
     fetch a random sample of herbarium images 
     and save them to folders
@@ -192,4 +192,4 @@ def fetch_random_sample(sample_size = 100, min_index = 4401, base_dir = "herbari
 
 if __name__ == "__main__":
     # download 500 random samples from the remaining items (after index 4400)
-    fetch_random_sample(sample_size = 500, min_index = 4401, base_dir = "herbarium_images")
+    fetch_random_sample(sample_size = 500, min_index = 4401, base_dir = "test_images")

@@ -6,6 +6,11 @@ Our project's main goal is to assist the Brown Herbarium in reading and transcri
 1. For machine pre-printed labels: Find images with almost exact similar labels; the colors could be different, but contents would be the same
 2. For hand-written labels: Match a segment of a label, typically a signature, with images with similar handwriting or containing that signature
 
+## Running the Project
+[1] `cd frontend`
+[2] `npm install`
+[3] `npm start`
+
 ## Data
 After scraping data or calling the API for the Brown Digital Repository, we successfully downloaded 5,770 images totaling nearly 9.5GB. Due to GitHub's size constraints, these images couldn't be uploaded directly to the repository. However, they have been made available for download on Kaggle. You can access the dataset here: https://www.kaggle.com/datasets/ashleywoertz2/deep-plant
 
