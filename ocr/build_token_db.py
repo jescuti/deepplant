@@ -2,11 +2,8 @@ import cv2
 import os
 import pytesseract
 from pytesseract import Output
-import PIL.Image
-import pprint
 import json
-from matching.label_matcher import match_query_to_labels
-from ocr_cleaning import clean_dict_tokens, extract_phrases_from_text
+from ocr_cleaning import extract_phrases_from_text
 
 
 '''
@@ -88,31 +85,37 @@ def draw_boxes(ocr_img, original_img) -> None:
     cv2.imshow("img", original_img)
     cv2.waitKey(0)
 
+def ocr_image(file_path: str) -> str:
+    img = cv2.imread(file_path)
+    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # Run tesseract for text extraction
+    text = pytesseract.image_to_string(gray_img, config=myconfig)
+
+    return text
 
 def main():
-    folder_path = "./images"
-    
     # Database of image path to text tokens and phrase
     label_db = {}
+    
+    rootdir = "../image_download/herbarium_random_500"  # TODO: make this invariant
+    # # Iterate through all test images
+    # for filename in os.listdir(folder_path):
+    #     file_path = os.path.join(folder_path, filename)
+    counter = 0
+    for dirpath, _, files in os.walk(rootdir):
+        for file in files:
+            file_path = os.path.join(dirpath, file)
+            if os.path.isfile(file_path) and "DS_Store" not in file_path:
+                # print(file_path)
+                raw_text = ocr_image(file_path)
 
-    # Iterate through all test images
-    for filename in os.listdir(folder_path):
-        file_path = os.path.join(folder_path, filename)
-
-        if os.path.isfile(file_path):
-            img = cv2.imread(file_path)
-            gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            # Run tesseract for text extraction
-            text = pytesseract.image_to_string(gray_img, config=myconfig)
-            # print(text)
-            # data = pytesseract.image_to_data(gray_img, config=myconfig, output_type=Output.DICT)
-            # tokens, phrase = clean_dict_tokens(data['text'])
-            # draw_boxes(gray_img, gray_img)
-
-            # Build tokens database
-            label_db[file_path] = extract_phrases_from_text(text)
-
+                # Build tokens database
+                label_db[file_path] = extract_phrases_from_text(raw_text)
+                
+                if counter <= 10:
+                    print(label_db[file_path])
+                    counter += 1
     # pprint.pprint(label_db, indent=2)
     with open('label_phrases_db.json', 'w') as f:
         json.dump(label_db, f, indent=2)
