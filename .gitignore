@@ -1,3 +1,5 @@
 .DS_Store
 image_download/herbarium_images/*
 image_download/herbarium_images/
+/image_download
+/ocr/__pycache__
