@@ -7,7 +7,7 @@ from build_token_db import ocr_image
 from label_matcher import search_by_phrase
 
 
-text_label = "James Bennett"
+text_label = "new mexico plants"
 
 with open("label_phrases_db.json", "rb") as f:
     database = json.load(f)

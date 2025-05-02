@@ -1,5 +1,6 @@
 import re
 import nltk
+from nltk.corpus import stopwords
 import spacy
 from functools import lru_cache
 from typing import Set
@@ -46,7 +47,7 @@ def load_vocab(langs: tuple[str, ...] = ("en",)) -> Set[str]:
 
 def has_named_entity(phrase: str, extra_names: set[str] = KNOWN_NAMES) -> bool:
     """
-    Return True if `phrase` contains:
+    Returns True if `phrase` contains:
       - any hard-coded name in `extra_names`, or
       - any spaCy-detected PERSON, ORG, GPE, LOC entity.
     """
@@ -69,7 +70,7 @@ def is_mostly_gibberish(
     vocab_langs: tuple[str, ...] = ("en", "fr",)
 ) -> bool:
     """
-    Return True if fewer than `threshold` fraction of words are in English vocab.
+    Returns True if fewer than `threshold` fraction of words are in English vocab.
     """
     tokens = [tok.lower() for tok in phrase.split()]
     if not tokens:
@@ -81,6 +82,11 @@ def is_mostly_gibberish(
 
 
 def is_useful_phrase(phrase: str) -> bool:
+    """
+    Apply smart filters to phrase, return True if the phrase:
+        - has named entities
+        - is mostly gibberish (having a lot of words not in the English vocab)
+    """
     phrase = phrase.strip()
     if not phrase:
         return False
@@ -92,21 +98,24 @@ def is_useful_phrase(phrase: str) -> bool:
     return True
 
 
+# def remove_stopwords(phrase: str) -> str:
+#     stop_words = set(stopwords.words("english"))
+#     stop_words.update(["like"])
+#     word_tokens = word_tokenize(phrase)
+
+
 def normalize_phrase(
     phrase: str,
     min_length: int = 3,
     vocab_langs: tuple[str, ...] = ("en", "fr")
 ) -> str:
     """
-    1. Strip out non-alphanumeric chars
-    2. Remove any word that has digits in it
-    3. Split, then drop words that are too short or (if len==3) not in the vocab
-    4. Clean up leftover edge punctuation/spaces
+    Edit a phrase by removing unwanted words/characters
+        1. Strip out non-alphanumeric chars
+        2. Remove any word that has digits in it
+        3. Split, then drop words that are too short or (if len==3) not in the vocab
+        4. Clean up leftover edge punctuation/spaces
     """
-    # TODO: remove filler words like and, the
-    # Make this work for whole image? so maybe cut out the 1/10 top part for the ruler
-    # maybe don't store brown uni herbarium?
-    
     vocab = load_vocab(vocab_langs)
 
     # 1) remove unwanted characters
@@ -116,13 +125,16 @@ def normalize_phrase(
     # 3) drop numbers with more than 8 digits (barcode)
     phrase = _CLEAN_8_DIGIT_NUMS.sub("", phrase)
 
-    # 4) split, filter, re-join
+    # 4) split, filter on each word, and re-join
+    stop_words = set(stopwords.words("english"))
+    stop_words.update(["like"])
     words = phrase.split()
     filtered = [
         w for w in words
         if not (
             len(w) < min_length
             or (len(w) == min_length and w.lower() not in vocab)
+            or w.lower() in stop_words  # filter out stop words
         )
     ]
     phrase = " ".join(filtered)
@@ -132,19 +144,22 @@ def normalize_phrase(
     return phrase
 
 
-def extract_phrases_from_text(text: str,
+def extract_phrases_from_text(
+    text: str,
+    exclude_phrases: list[str],
     vocab_langs: tuple[str, ...] = ("en", "fr",)
 ) -> list[str]:
     """
     Split text into lines, normalize each “useful” phrase, return lowercased.
+    Leave phrases that are in the list of excluded phrases.
     """
-    out: list[str] = []
+    phrases: list[str] = []
     for line in text.splitlines():
         if is_useful_phrase(line):
             norm = normalize_phrase(line, vocab_langs=vocab_langs).lower()
-            if norm and norm not in out:
-                out.append(norm)
-    return out
+            if norm and norm not in phrases and not any(exc in norm for exc in exclude_phrases):
+                phrases.append(norm)
+    return phrases
 
 
 def main():

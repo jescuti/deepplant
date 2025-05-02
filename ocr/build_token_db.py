@@ -1,7 +1,8 @@
-import cv2
 import os
+import numpy as np
+from typing import Any, Literal
+import cv2
 import pytesseract
-from pytesseract import Output
 import json
 from ocr_cleaning import extract_phrases_from_text
 
@@ -33,92 +34,68 @@ OCR Engine modes (OEM):
     3|default                 Default, based on what is available.
 '''
 
-'''
-create txt.file with file names: auto create links to bdr
-match handwriting styles + printed labels
-or PDF: segmented labels that match with a BPR link on it -> helpful
-
-segmentation for stamp
-
-frontend: text in label or picture of label
-
-match exactly the strings; 
-
-weighting matches: brown university herbarium; herb; herbarium; xex; flora of
-
-OCR for herbaria in general around the world; skeletal/skeleton; harvard; smithsonian
-'''
-
 myconfig = r"--psm 6 --oem 3"
-# images/Lolium arvense_bdr_819079.jpg
-# images/Parnassia_bdr_398482.png
-# images/Uraria lagopodioides_bdr_758039.png
-# "images/Saxifraga biflora_bdr_853535.jpg"
-# "images/Trifolium tridentatum_bdr_702466.jpg"
-# "images/Mertensia alpina_bdr_754912.jpg"
-# FILENAME = "preprocessing/images/Mertensia alpina_bdr_754912.jpg"
 
-def draw_boxes(ocr_img, original_img) -> None:
-    '''
-    Draw green boxes around tesseract-detected text in the original image.
+def OCR_image(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> Any:
+    """
+    Run OCR on the input image using a specific output mode.
 
     Parameters
     ----------
-    ocr_image
-        The image to perform tesseract OCR on for bounding box boundaries.
-    original_image
-        The image to draw the boxes on
-
+        image : np.ndarray
+            The image to run OCR on.
+        output_mode: Literal["txt", "dct"]
+            An output mode that belongs to the specified list. Default: "txt".
+    
     Returns
     -------
-    None
-    '''
-    data = pytesseract.image_to_data(ocr_img, config=myconfig, output_type=Output.DICT)
-    print(data['text'])
-    num_boxes = len(data['text'])
-    for i in range(num_boxes):
-        if float(data['conf'][i]) > 20:
-            print("Char:", data['text'][i], " ; Conf:", data['conf'][i])
-            (x, y, width, height) = (data['left'][i], data['top'][i], data['width'][i], data['height'][i])
-            img = cv2.rectangle(original_img, (x,y), (x+width, y+height), (0,255,0), 2)
+    The OCR output in the specified format.
+    """
+    # Run tesseract OCR for text extraction
+    if output_mode == "txt":
+        out = pytesseract.image_to_string(image, config=myconfig)
+    elif output_mode == "dct":
+        out = pytesseract.image_to_data(image, config=myconfig, output_type=pytesseract.Output.DICT)
 
-    cv2.imshow("img", original_img)
-    cv2.waitKey(0)
-
-def ocr_image(file_path: str) -> str:
-    img = cv2.imread(file_path)
-    gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-    # Run tesseract for text extraction
-    text = pytesseract.image_to_string(gray_img, config=myconfig)
-
-    return text
+    return out
 
 def main():
     # Database of image path to text tokens and phrase
-    label_db = {}
+    label_db: dict[str, list[str]] = {}
+    first_entry = True
     
     rootdir = "../image_download/herbarium_random_500"  # TODO: make this invariant
+    excluded_phrases = ["copyright", "reserved"]
     # # Iterate through all test images
     # for filename in os.listdir(folder_path):
     #     file_path = os.path.join(folder_path, filename)
-    counter = 0
-    for dirpath, _, files in os.walk(rootdir):
-        for file in files:
-            file_path = os.path.join(dirpath, file)
-            if os.path.isfile(file_path) and "DS_Store" not in file_path:
-                # print(file_path)
-                raw_text = ocr_image(file_path)
 
-                # Build tokens database
-                label_db[file_path] = extract_phrases_from_text(raw_text)
+    with open("label_phrases_db.json", "w", encoding="utf-8", buffering=1) as f:
+        f.write("{\n")
+        for dirpath, _, files in os.walk(rootdir):
+            for file in files:
+                file_path = os.path.join(dirpath, file)
+                if not (os.path.isfile(file_path) and "DS_Store" not in file_path):
+                    continue
+
+                img = cv2.imread(file_path)
+                gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # TODO: put this into preprocessing
                 
-                if counter <= 10:
-                    print(label_db[file_path])
-                    counter += 1
-    # pprint.pprint(label_db, indent=2)
-    with open('label_phrases_db.json', 'w') as f:
-        json.dump(label_db, f, indent=2)
+                # OCR + extract phrases
+                raw_text = OCR_image(gray_img)
+                phrases = extract_phrases_from_text(raw_text, excluded_phrases)
+                label_db[file_path] = phrases
+                
+                # Stream database to a JSON file
+                if first_entry:
+                    first_entry = False
+                else:
+                    f.write(",\n")
+                f.write(
+                    f"  {json.dumps(file_path)}: "
+                    f"{json.dumps(phrases, ensure_ascii=False)}"
+                )
+        f.write("\n}\n")
 
 if __name__ == "__main__":
     main()
