@@ -141,7 +141,7 @@ def normalize_phrase(
 
 def extract_phrases_from_text(
     text: str,
-    exclude_phrases: list[str],
+    exclude_phrases: list[str] = ["copyright", "reserved"],
     vocab_langs: tuple[str, ...] = ("en", "fr",)
 ) -> list[str]:
     """

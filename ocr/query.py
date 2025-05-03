@@ -4,24 +4,30 @@ from ocr_cleaning import normalize_phrase
 from build_token_db import OCR_image, read_image_and_preprocess, DATABASE_FILENAME
 from search_db import search_by_phrase, search_by_image
 
-
-with open(DATABASE_FILENAME, "rb") as f:
-    database = json.load(f)
-
-def query_by_label(text_label):
+def generate_pdf(list_of_paths):
     """
-    given text label, clean label, find images that match
-    """
-    text_label = "new mexico plants"
+    Generate a PDF file that contains the cropped out labels and URLs to matched images.
 
+    URL format: https://repository.library.brown.edu/iiif/image/bdr:597562/full/full/0/default.jpg
+    """
+    
+    
+
+
+def query_by_label(text_label, database):
+    """
+    Given a text label, clean label, and find images that match.
+    """
     norm = normalize_phrase(text_label)
-    output = search_by_phrase(text_label, database)
-    pprint.pprint(output)
+    list_of_paths = search_by_phrase(norm, database)
     
+    # Generate pdf
+    return list_of_paths
     
-def query_by_image(file_path):
+
+def query_by_image(file_path, database):
     """
-    given image, extract label, match
+    Given an image, segment label, extract texts, and find images that match.
     """
     # Read in input image
     img = read_image_and_preprocess(file_path)
@@ -36,3 +42,11 @@ def query_by_image(file_path):
 
     # Search database and get a list of paths
     list_of_paths = search_by_image(input_phrases, database)
+
+
+def main():
+    with open(DATABASE_FILENAME, "rb") as f:
+        database = json.load(f)
+
+    text_label = "new mexico plants"
+    pprint.pprint(search_by_phrase(text_label, database))

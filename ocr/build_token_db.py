@@ -34,11 +34,11 @@ OCR Engine modes (OEM):
     2|tesseract_lstm_combined Legacy + LSTM engines.
     3|default                 Default, based on what is available.
 '''
-
 MYCONFIG = r"--psm 6 --oem 3"
-ROOTDIR = "../image_download/samples"  # TODO: make this invariant
+
+ROOTDIR = "../image_download/samples"  
 EXCLUDE_PHRASES = ["copyright", "reserved"]
-DATABASE_FILENAME = "samples_db.json"
+DATABASE_FILENAME = "5k_db.json"
 
 def read_image_and_preprocess(file_path) -> np.ndarray:
     image = cv2.imread(file_path)
