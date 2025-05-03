@@ -34,7 +34,10 @@ OCR Engine modes (OEM):
     3|default                 Default, based on what is available.
 '''
 
-myconfig = r"--psm 6 --oem 3"
+MYCONFIG = r"--psm 6 --oem 3"
+ROOTDIR = "../image_download/herbarium_random_500"  # TODO: make this invariant
+EXCLUDE_PHRASES = ["copyright", "reserved"]
+DATABASE_FILENAME = "label_phrases_db.json"
 
 def OCR_image(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> Any:
     """
@@ -53,9 +56,9 @@ def OCR_image(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> 
     """
     # Run tesseract OCR for text extraction
     if output_mode == "txt":
-        out = pytesseract.image_to_string(image, config=myconfig)
+        out = pytesseract.image_to_string(image, config=MYCONFIG)
     elif output_mode == "dct":
-        out = pytesseract.image_to_data(image, config=myconfig, output_type=pytesseract.Output.DICT)
+        out = pytesseract.image_to_data(image, config=MYCONFIG, output_type=pytesseract.Output.DICT)
 
     return out
 
@@ -63,27 +66,23 @@ def main():
     # Database of image path to text tokens and phrase
     label_db: dict[str, list[str]] = {}
     first_entry = True
-    
-    rootdir = "../image_download/herbarium_random_500"  # TODO: make this invariant
-    excluded_phrases = ["copyright", "reserved"]
-    # # Iterate through all test images
-    # for filename in os.listdir(folder_path):
-    #     file_path = os.path.join(folder_path, filename)
 
-    with open("label_phrases_db.json", "w", encoding="utf-8", buffering=1) as f:
+    with open(DATABASE_FILENAME, "w", encoding="utf-8", buffering=1) as f:
         f.write("{\n")
-        for dirpath, _, files in os.walk(rootdir):
+        # Recursively search all subdirectories for files
+        # If just one parent folder, use os.listdir
+        for dirpath, _, files in os.walk(ROOTDIR):
             for file in files:
                 file_path = os.path.join(dirpath, file)
                 if not (os.path.isfile(file_path) and "DS_Store" not in file_path):
                     continue
 
                 img = cv2.imread(file_path)
-                gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # TODO: put this into preprocessing
+                gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # TODO: if more steps, put into preprocessing
                 
                 # OCR + extract phrases
                 raw_text = OCR_image(gray_img)
-                phrases = extract_phrases_from_text(raw_text, excluded_phrases)
+                phrases = extract_phrases_from_text(raw_text, EXCLUDE_PHRASES)
                 label_db[file_path] = phrases
                 
                 # Stream database to a JSON file

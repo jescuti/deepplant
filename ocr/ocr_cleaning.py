@@ -20,6 +20,7 @@ nlp = spacy.load("en_core_web_sm")
 NAMED_ENTITY_TYPES = {"PERSON", "ORG", "GPE", "LOC"}
 KNOWN_NAMES = {"Olneyanum"}
 
+
 @lru_cache(maxsize=1)
 def load_vocab(langs: tuple[str, ...] = ("en",)) -> Set[str]:
     """
@@ -96,12 +97,6 @@ def is_useful_phrase(phrase: str) -> bool:
         return False
     
     return True
-
-
-# def remove_stopwords(phrase: str) -> str:
-#     stop_words = set(stopwords.words("english"))
-#     stop_words.update(["like"])
-#     word_tokens = word_tokenize(phrase)
 
 
 def normalize_phrase(
