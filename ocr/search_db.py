@@ -3,7 +3,7 @@ import cv2
 from build_token_db import read_image_and_preprocess
 
 """
-TOKENS DATABASE STRUCTURE
+TOKENS DATABASE STRUCTURE EXAMPLE
 
 label_db = {
   "./images/Mertensia alpina_bdr_754912.jpg": [
@@ -15,7 +15,7 @@ label_db = {
 """
 def search_by_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str]:
     """
-    Given an input_phrase, search the label database for images that contain the input phrase
+    Given an input_phrase, search the label database for images that contain that phrase.
 
     Parameters
     ----------
@@ -26,7 +26,7 @@ def search_by_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[
         
     Returns
     -------
-    A list of image paths 
+    A list of image paths whose labels contain the search phrase.
     """
     output : list[str] = []
 
@@ -38,26 +38,27 @@ def search_by_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[
     return output
 
 
-def search_by_image(file_path, label_db: dict[str, list[str]]) -> list[str]:
+def search_by_image(input_phrases: list[str], label_db: dict[str, list[str]]) -> list[str]:
     """
-    Given an input_phrase, search the label database for images that contain the input phrase.
-    Approach: Since we're matching a whole label, fuzzy match all JOINED phrases in the input image and 
-        those for each database image
+    Given a list of phrases from an input image label, search the label database 
+        for images that contain those phrases. 
+    
+    Approach: Join all phrases in the input list, fuzzy match against joined phrases
+        in each database image
+    
+    Parameters
+    ----------
+    input_phrases : list[str]
+        A list of input phrases, extracted by OCR from the input image
+    label_db : dict[str, list[str]]
+        The dictionary database that stores pairs of (image_path, list_of_phrases)
+        
+    Returns
+    -------
+    A list of image paths whose labels contain the search phrases.
     """
-    output : list[str] = [] 
+    output : list[str] = []
 
-    # Read in input image
-    img = read_image_and_preprocess(file_path)
-
-    # Run SAM on input image and get a list of labels
-    pass
-    segmented_labels = []
-
-    # Run OCR on recognized labels
-    pass
-    input_phrases = []
-
-    # Matching: a list of phrases
     joined_input_phrase = " ".join(input_phrases)
 
     for image_path, image_phrases in label_db.items():
