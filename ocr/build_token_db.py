@@ -36,7 +36,8 @@ OCR Engine modes (OEM):
 '''
 MYCONFIG = r"--psm 6 --oem 3"
 
-ROOTDIR = "../image_download/samples"  
+# ROOTDIR = "../image_download/samples"  
+ROOTDIR = "../image_download/db_labels"  
 EXCLUDE_PHRASES = ["copyright", "reserved"]
 DATABASE_FILENAME = "5k_db.json"
 
@@ -93,7 +94,7 @@ def main():
             
             # OCR + extract phrases
             raw_text = OCR_image(img)
-            phrases = extract_phrases_from_text(raw_text, EXCLUDE_PHRASES)
+            phrases = extract_phrases_from_text(raw_text)
             label_db[file_path] = phrases
             
             # Stream database to a JSON file

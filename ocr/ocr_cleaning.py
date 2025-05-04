@@ -5,21 +5,12 @@ import spacy
 from functools import lru_cache
 from typing import Set
 
+# ---------------- LOADING VOCABULARIES ------------------
 '''
 NOTE: Install language models: 
     python -m spacy download en_core_web_sm 
     python -m spacy download fr_core_news_sm
 '''
-
-_CLEAN_NON_ALNUM         = re.compile(r"[^A-Za-z0-9\s]+")
-_CLEAN_WORDS_WITH_DIGITS = re.compile(r"[A-Za-z]+\d+[A-Za-z]*")
-_CLEAN_8_DIGIT_NUMS      = re.compile(r"[0-9]{8,}")
-_CLEAN_EDGES             = re.compile(r"^[\s\.',]+|[\s\.',]+$")
-
-nlp = spacy.load("en_core_web_sm")
-NAMED_ENTITY_TYPES = {"PERSON", "ORG", "GPE", "LOC"}
-KNOWN_NAMES = {"Olneyanum"}
-
 
 @lru_cache(maxsize=1)
 def load_vocab(langs: tuple[str, ...] = ("en",)) -> Set[str]:
@@ -45,22 +36,34 @@ def load_vocab(langs: tuple[str, ...] = ("en",)) -> Set[str]:
 
     return vocab
 
+# -------------------- GLOBAL VARIABLES ---------------------
+# Module-level resources (loaded once)
+nlp = spacy.load("en_core_web_sm", disable=["parser","tagger","lemmatizer","attribute_ruler"])
+STOP_WORDS = set(stopwords.words("english")) | {"like"}
+VOCAB = load_vocab(("en",))
 
-def has_named_entity(phrase: str, extra_names: set[str] = KNOWN_NAMES) -> bool:
+# Pre-compile regex patterns
+_CLEAN_NON_ALNUM, _CLEAN_WORDS_WITH_DIGITS, _CLEAN_8_DIGIT_NUMS, _CLEAN_EDGES = (
+    re.compile(r"[^A-Za-z0-9\s]+"),
+    re.compile(r"[A-Za-z]+\d+[A-Za-z]*"),
+    re.compile(r"[0-9]{8,}"),
+    re.compile(r"^[\s\.',]+|[\s\.',]+$")
+)
+
+NAMED_ENTITY_TYPES = {"PERSON", "ORG", "GPE", "LOC"}
+KNOWN_NAMES = {"Olneyanum", "Rocky Mountain Flora"}
+
+
+# ------------------------- CLEANING -------------------------
+@lru_cache(maxsize=1024)
+def has_named_entity(phrase: str) -> bool:
     """
     Returns True if `phrase` contains:
-      - any hard-coded name in `extra_names`, or
+      - any hard-coded name in `KNOWN_NAMES`, or
       - any spaCy-detected PERSON, ORG, GPE, LOC entity.
     """
-    phrase = phrase.strip()
-    if not phrase:
-        return False
-
-    # quick check for any “special” names
-    if any(name in phrase for name in extra_names):
+    if any(name in phrase for name in KNOWN_NAMES):
         return True
-
-    # spaCy NER
     doc = nlp(phrase)
     return any(ent.label_ in NAMED_ENTITY_TYPES for ent in doc.ents)
 
@@ -68,7 +71,7 @@ def has_named_entity(phrase: str, extra_names: set[str] = KNOWN_NAMES) -> bool:
 def is_mostly_gibberish(
     phrase: str,
     threshold: float = 0.5,
-    vocab_langs: tuple[str, ...] = ("en", "fr",)
+    vocab_langs: tuple[str, ...] = ("en",)
 ) -> bool:
     """
     Returns True if fewer than `threshold` fraction of words are in English vocab.
@@ -82,80 +85,69 @@ def is_mostly_gibberish(
     return (valid / len(tokens)) < threshold
 
 
-def is_useful_phrase(phrase: str) -> bool:
+def normalize_phrase(phrase: str, min_length: int = 3) -> str:
     """
-    Apply smart filters to phrase, return True if the phrase:
-        - has named entities
-        - is mostly gibberish (having a lot of words not in the English vocab)
+    Edit a phrase by removing unwanted words/characters:
+        1) Strip out non-alphanumeric chars
+        2) Remove words with digits
+        3) Remove long digit strings
+        4) Filter short/stop words
+        5) Clean up leftover edges
     """
-    phrase = phrase.strip()
-    if not phrase:
-        return False
-    if has_named_entity(phrase):
-        return True
-    if is_mostly_gibberish(phrase):
-        return False
-    
-    return True
 
-
-def normalize_phrase(
-    phrase: str,
-    min_length: int = 3,
-    vocab_langs: tuple[str, ...] = ("en", "fr")
-) -> str:
-    """
-    Edit a phrase by removing unwanted words/characters
-        1. Strip out non-alphanumeric chars
-        2. Remove any word that has digits in it
-        3. Split, then drop words that are too short or (if len==3) not in the vocab
-        4. Clean up leftover edge punctuation/spaces
-    """
-    vocab = load_vocab(vocab_langs)
-
-    # 1) remove unwanted characters
+    # 1–3) regex cleaning
     phrase = _CLEAN_NON_ALNUM.sub("", phrase)
-    # 2) drop words with digits
     phrase = _CLEAN_WORDS_WITH_DIGITS.sub("", phrase)
-    # 3) drop numbers with more than 8 digits (barcode)
     phrase = _CLEAN_8_DIGIT_NUMS.sub("", phrase)
 
-    # 4) split, filter on each word, and re-join
-    stop_words = set(stopwords.words("english"))
-    stop_words.update(["like"])
+    # 4) split & filter
     words = phrase.split()
-    filtered = [
-        w for w in words
-        if not (
-            len(w) < min_length
-            or (len(w) == min_length and w.lower() not in vocab)
-            or w.lower() in stop_words  # filter out stop words
-        )
-    ]
-    phrase = " ".join(filtered)
-
+    filtered = []
+    for w in words:
+        lw = w.lower()
+        if (
+            len(w) >= min_length
+            and (len(w) != min_length or lw in VOCAB)
+            and lw not in STOP_WORDS
+        ):
+            filtered.append(w)
     # 5) strip leftover punctuation/spaces
-    phrase = _CLEAN_EDGES.sub("", phrase)
-    return phrase
+    return _CLEAN_EDGES.sub("", " ".join(filtered))
 
 
 def extract_phrases_from_text(
     text: str,
     exclude_phrases: list[str] = ["copyright", "reserved"],
-    vocab_langs: tuple[str, ...] = ("en", "fr",)
 ) -> list[str]:
     """
-    Split text into lines, normalize each “useful” phrase, return lowercased.
-    Leave phrases that are in the list of excluded phrases.
+    1) Check for named entities (original case)
+    2) If not a name, reject gibberish
+    3) Normalize and lowercase
+    4) Exclude duplicates & unwanted
     """
-    phrases: list[str] = []
+    result: list[str] = []
     for line in text.splitlines():
-        if is_useful_phrase(line):
-            norm = normalize_phrase(line, vocab_langs=vocab_langs).lower()
-            if norm and norm not in phrases and not any(exc in norm for exc in exclude_phrases):
-                phrases.append(norm)
-    return phrases
+        phrase = line.strip()
+        if not phrase:
+            continue
 
+        # 1) named-entity check
+        if has_named_entity(phrase):
+            pass
+        else:
+            # 2) gibberish check
+            if is_mostly_gibberish(phrase):
+                continue
+        # 3) normalization
+        norm = normalize_phrase(phrase).lower()
+        # 4) exclude
+        if not norm or norm in result:
+            continue
+        if any(exc in norm for exc in exclude_phrases):
+            continue
+        result.append(norm)
+
+    return result
 
 def main():
     pass

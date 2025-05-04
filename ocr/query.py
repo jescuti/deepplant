@@ -45,8 +45,12 @@ def query_by_image(file_path, database):
 
 
 def main():
-    with open(DATABASE_FILENAME, "rb") as f:
+    with open("databases/500_random_db.json", "rb") as f:
+    # with open(DATABASE_FILENAME, "rb") as f:
         database = json.load(f)
+        print(len(database))
+    # text_label = "new mexico plants"
+    # pprint.pprint(search_by_phrase(text_label, database))
 
-    text_label = "new mexico plants"
-    pprint.pprint(search_by_phrase(text_label, database))
+if __name__ == "__main__":
+    main()
