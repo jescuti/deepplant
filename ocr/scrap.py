@@ -1,17 +1,17 @@
-from rapidfuzz import fuzz
-from build_token_db import OCR_image, read_image_and_preprocess
-from ocr_cleaning import extract_phrases_from_text
-import os
-import nltk
-from tqdm import tqdm
-import cv2
-from nltk.tokenize import word_tokenize
-nltk.download('punkt_tab')
+# from rapidfuzz import fuzz
+# from build_token_db import OCR_image, read_image_and_preprocess
+# from ocr_cleaning import extract_phrases_from_text
+# import os
+# import nltk
+# from tqdm import tqdm
+# import cv2
+# from nltk.tokenize import word_tokenize
+# nltk.download('punkt_tab')
 
-img = read_image_and_preprocess("../image_download/db_labels/Sidalcea candida_bdr_739461.jpg")
-raw = OCR_image(img)
-print("raw:", raw)
-print("clean:", extract_phrases_from_text(raw))
+# img = read_image_and_preprocess("../image_download/db_labels/Sidalcea candida_bdr_739461.jpg")
+# raw = OCR_image(img)
+# print("raw:", raw)
+# print("clean:", extract_phrases_from_text(raw))
 # print(fuzz.partial_ratio(
 #     "James Bennett", 
 #     "oregon coll ann 1871 presented", score_cutoff=50))
@@ -30,17 +30,18 @@ print("clean:", extract_phrases_from_text(raw))
 #         print("clean text:", clean_phrases)
 
 # GENERATE PDF
-# from fpdf import FPDF
+from fpdf import FPDF
 
-# pdf = FPDF()
-# pdf.add_page()
-# pdf.set_font("Arial", size=12)
-# pdf.cell(200, 5, txt="Hello, world!", ln=1, align="L")
-# pdf.image("./db_labels/Carex vesicaria_bdr_760491.jpg", x=pdf.get_x(), y=pdf.get_y(), h=40, w=200)
-# pdf.ln(50)
-# pdf.cell(200, 5, txt="Hello, world!", ln=1, align="L")
-# pdf.image("./db_labels/Echites difformis_bdr_755459.jpg", x=pdf.get_x(), y=pdf.get_y(), h=40, w=200)
-# pdf.ln(50)
-# pdf.cell(200, 5, txt="Hello, world!", ln=1, align="L")
-# pdf.image("./db_labels/Echites difformis_bdr_755459.jpg", x=pdf.get_x(), y=pdf.get_y(), h=40, w=200)
-# pdf.output("simple_pdf.pdf")
+pdf = FPDF()
+pdf.add_page()
+pdf.set_font("Arial", size=12, style="U")
+pdf.set_text_color(0, 0, 255)
+
+for _ in range(3):
+    pdf.cell(200, 5, txt="https://repository.library.brown.edu/iiif/image/bdr:739461/full/full/0/default.jpg", ln=1, align="L", \
+            link="https://repository.library.brown.edu/iiif/image/bdr:739461/full/full/0/default.jpg")
+    pdf.image("./test_labels/Gerardia divaricata_bdr_742487.jpg", x=pdf.get_x(), y=pdf.get_y(), h=40, w=200)
+    pdf.ln(50)
+
+
+pdf.output("simple_pdf.pdf")

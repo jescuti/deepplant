@@ -5,41 +5,14 @@ from typing import Any, Literal
 import cv2
 import pytesseract
 import json
-from ocr_cleaning import extract_phrases_from_text
+from ocr import run_ocr
 
-
-'''
-Page segmentation modes (PSM):
-    0|osd_only                Orientation and script detection (OSD) only.
-    1|auto_osd                Automatic page segmentation with OSD.
-    2|auto_only               Automatic page segmentation, but no OSD, or OCR. (not implemented)
-    3|auto                    Fully automatic page segmentation, but no OSD. (Default)
-    4|single_column           Assume a single column of text of variable sizes.
-    5|single_block_vert_text  Assume a single uniform block of vertically aligned text.
-    6|single_block            Assume a single uniform block of text.
-    7|single_line             Treat the image as a single text line.
-    8|single_word             Treat the image as a single word.
-    9|circle_word             Treat the image as a single word in a circle.
-  10|single_char             Treat the image as a single character.
-  11|sparse_text             Sparse text. Find as much text as possible in no particular order.
-  12|sparse_text_osd         Sparse text with OSD.
-  13|raw_line                Raw line. Treat the image as a single text line,
-                            bypassing hacks that are Tesseract-specific.
-'''
-
-'''
-OCR Engine modes (OEM):
-    0|tesseract_only          Legacy engine only.
-    1|lstm_only               Neural nets LSTM engine only.
-    2|tesseract_lstm_combined Legacy + LSTM engines.
-    3|default                 Default, based on what is available.
-'''
-MYCONFIG = r"--psm 6 --oem 3"
 
 # ROOTDIR = "../image_download/samples"  
 ROOTDIR = "../image_download/db_labels"  
 EXCLUDE_PHRASES = ["copyright", "reserved"]
 DATABASE_FILENAME = "5k_db.json"
+
 
 def read_image_and_preprocess(file_path) -> np.ndarray:
     image = cv2.imread(file_path)
@@ -47,29 +20,6 @@ def read_image_and_preprocess(file_path) -> np.ndarray:
 
     return gray_image
 
-
-def OCR_image(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> Any:
-    """
-    Run OCR on the input image using a specific output mode.
-
-    Parameters
-    ----------
-        image : np.ndarray
-            The image to run OCR on.
-        output_mode: Literal["txt", "dct"]
-            An output mode that belongs to the specified list. Default: "txt".
-    
-    Returns
-    -------
-    The OCR output in the specified format.
-    """
-    # Run tesseract OCR for text extraction
-    if output_mode == "txt":
-        out = pytesseract.image_to_string(image, config=MYCONFIG)
-    elif output_mode == "dct":
-        out = pytesseract.image_to_data(image, config=MYCONFIG, output_type=pytesseract.Output.DICT)
-
-    return out
 
 def main():
     # Database of image path to text tokens and phrase
@@ -92,9 +42,8 @@ def main():
 
             img = read_image_and_preprocess(file_path)
             
-            # OCR + extract phrases
-            raw_text = OCR_image(img)
-            phrases = extract_phrases_from_text(raw_text)
+            # Run OCR
+            phrases = run_ocr(img)
             label_db[file_path] = phrases
             
             # Stream database to a JSON file

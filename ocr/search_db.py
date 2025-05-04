@@ -13,7 +13,7 @@ label_db = {
   ...
 }
 """
-def search_by_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str]:
+def search_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str]:
     """
     Given an input_phrase, search the label database for images that contain that phrase.
 
@@ -38,7 +38,7 @@ def search_by_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[
     return output
 
 
-def search_by_image(input_phrases: list[str], label_db: dict[str, list[str]]) -> list[str]:
+def search_list_of_phrases(input_phrases: list[str], label_db: dict[str, list[str]]) -> list[str]:
     """
     Given a list of phrases from an input image label, search the label database 
         for images that contain those phrases. 
