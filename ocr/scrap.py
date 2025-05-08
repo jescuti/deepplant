@@ -1,6 +1,6 @@
 from rapidfuzz import fuzz
 from build_token_db import read_image_and_preprocess
-from ocr_cleaning import extract_phrases_from_text, is_mostly_gibberish, has_named_entity
+from ocr_cleaning import extract_phrases_from_text
 from ocr import _raw_ocr, run_clean_ocr
 import os
 from tqdm import tqdm

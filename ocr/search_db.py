@@ -32,7 +32,7 @@ def search_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str
 
     for image_path, phrases in label_db.items():
         for phrase in phrases:
-            if fuzz.partial_ratio(input_phrase, phrase, score_cutoff=70):
+            if fuzz.partial_ratio(input_phrase, phrase, score_cutoff=90):
                 if image_path not in output:
                     output.append(image_path)
     return output

@@ -1,6 +1,6 @@
 import json
 import pprint
-from ocr_cleaning import normalize_phrase
+from ocr_cleaning import normalize_doc
 from ocr import run_clean_ocr
 from build_token_db import read_image_and_preprocess, DATABASE_FILENAME
 from search_db import search_phrase, search_list_of_phrases
@@ -45,7 +45,7 @@ def generate_pdf(list_of_codes: list[str], list_of_paths: list[str]) -> None:
             200, 5, txt=f"https://repository.library.brown.edu/iiif/image/bdr:{code}/full/full/0/default.jpg", \
                 ln=1, align="L", \
                 link=f"https://repository.library.brown.edu/iiif/image/bdr:{code}/full/full/0/default.jpg")
-        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
+        # pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
         pdf.ln(50)
 
     pdf.output("output.pdf")
@@ -55,8 +55,8 @@ def query_by_label(text_label, database):
     """
     Given a text label, clean label, and find images that match.
     """
-    norm = normalize_phrase(text_label)
-    list_of_paths = search_phrase(norm, database)
+    cleaned_label = text_label.strip().lower()
+    list_of_paths = search_phrase(cleaned_label, database)
     
     # Generate pdf
     return list_of_paths
@@ -65,9 +65,14 @@ def query_by_label(text_label, database):
 def query_by_image(file_path: str, database: dict[str, list[str]], labeled: bool=True):
     """
     Given an image, segment label (if needed), extract texts, and find images that match.
+    TODO: 
+    1. Add SAM for full picture
+    2. Input format of image?
     """
     # Read in input image
     img = read_image_and_preprocess(file_path)
+    if img is None:
+        raise FileNotFoundError(f"Could not load image at {file_path!r}")
 
     # Run SAM on input image and get a list of labels
     if not labeled:
@@ -83,16 +88,18 @@ def query_by_image(file_path: str, database: dict[str, list[str]], labeled: bool
 
 
 def main():
-    # with open("databases/samples_db.json", "rb") as f:
-    with open(DATABASE_FILENAME, "rb") as f:
+    with open("databases/5k_db_1.json", "rb") as f:
+    # with open(DATABASE_FILENAME, "rb") as f:
         database = json.load(f)
     
     ### TEST QUERY BY LABEL
-    text_label = "whitman bailey"
+    text_label = "rocky mountain flora"
     list_of_paths = query_by_label(text_label, database)
-    print(list_of_paths)
+    print(f"Finished querying. Number of images found: {len(list_of_paths)}.")
     list_of_codes = extract_bdr_code(list_of_paths)
+    print("Started generating PDF...")
     generate_pdf(list_of_codes, list_of_paths)
+    print("Finished generating PDF!")
 
     # pprint.pprint(search_by_phrase(text_label, database))
 

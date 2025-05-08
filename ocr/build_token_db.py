@@ -7,12 +7,15 @@ from ocr import run_clean_ocr
 
 
 ROOTDIR = "../image_download/herbarium_images"  
-ROOTDIR = "../image_download/db_labels"  
+# ROOTDIR = "../image_download/db_labels"  
 EXCLUDE_PHRASES = ["copyright", "reserved"]
-DATABASE_FILENAME = os.path.join("databases", "db_labels.json")
+DATABASE_FILENAME = os.path.join("databases", "5k_db_2.json")
 
 def read_image_and_preprocess(file_path):
     image = cv2.imread(file_path)
+    if image is None:
+        print(f"Could not load image at {file_path!r}")
+        return None
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     return gray_image
@@ -39,8 +42,8 @@ def main():
                     continue
 
                 img = read_image_and_preprocess(file_path)
-                # if img is not None:
-                #     continue
+                if img is None:
+                    continue
                 
                 # Run OCR
                 phrases = run_clean_ocr(img)
