@@ -1,13 +1,14 @@
 import json
 import pprint
 from ocr_cleaning import normalize_phrase
-from ocr import run_ocr
+from ocr import run_clean_ocr
 from build_token_db import read_image_and_preprocess, DATABASE_FILENAME
 from search_db import search_phrase, search_list_of_phrases
 from fpdf import FPDF
 import re
 
 _BDR_CODES = re.compile(r'([0-9]{6})')
+
 
 def extract_bdr_code(list_of_paths: list[str]) -> list[str]:
     list_of_codes : list[str] = []
@@ -16,6 +17,7 @@ def extract_bdr_code(list_of_paths: list[str]) -> list[str]:
         if code:
             list_of_codes.append(code.group(0))
     return list_of_codes
+
 
 def generate_pdf(list_of_codes: list[str], list_of_paths: list[str]) -> None:
     """
@@ -46,7 +48,7 @@ def generate_pdf(list_of_codes: list[str], list_of_paths: list[str]) -> None:
         pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
         pdf.ln(50)
 
-    pdf.output("found_labels.pdf")
+    pdf.output("output.pdf")
 
 
 def query_by_label(text_label, database):
@@ -73,7 +75,7 @@ def query_by_image(file_path: str, database: dict[str, list[str]], labeled: bool
         segmented_labels = []
 
     # Run OCR on recognized labels and get a list of phrases
-    input_phrases = run_ocr(img)
+    input_phrases = run_clean_ocr(img)
 
     # Search database and get a list of paths
     list_of_paths = search_list_of_phrases(input_phrases, database)
@@ -81,15 +83,25 @@ def query_by_image(file_path: str, database: dict[str, list[str]], labeled: bool
 
 
 def main():
-    with open("databases/samples_db.json", "rb") as f:
-    # with open(DATABASE_FILENAME, "rb") as f:
+    # with open("databases/samples_db.json", "rb") as f:
+    with open(DATABASE_FILENAME, "rb") as f:
         database = json.load(f)
-        
-    # text_label = "new mexico plants"
-    # pprint.pprint(search_by_phrase(text_label, database))
-    list_of_paths = query_by_image("../image_download/db_labels/Mertensia alpina_bdr_754912.jpg", database)
+    
+    ### TEST QUERY BY LABEL
+    text_label = "whitman bailey"
+    list_of_paths = query_by_label(text_label, database)
+    print(list_of_paths)
     list_of_codes = extract_bdr_code(list_of_paths)
     generate_pdf(list_of_codes, list_of_paths)
+
+    # pprint.pprint(search_by_phrase(text_label, database))
+
+    ### TEST QUERY BY IMAGE
+    # image_path = "../image_download/db_labels/Mertensia alpina_bdr_754912.jpg"
+    # list_of_paths = query_by_image(image_path, database)
+    # list_of_codes = extract_bdr_code(list_of_paths)
+    # generate_pdf(list_of_codes, list_of_paths)
+
 
 if __name__ == "__main__":
     main()
