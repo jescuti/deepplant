@@ -28,13 +28,11 @@ def main():
     with open(DATABASE_FILENAME, "w", encoding="utf-8", buffering=1) as f:
         f.write("{\n")
 
-        # Recursively search all subdirectories for files
+        # Recursively search all subdirectories for files       
         # If just one parent folder, use os.listdir
         # for file in tqdm(os.listdir(ROOTDIR)):
         #     file_path = os.path.join(ROOTDIR, file)
-
         for dirpath, _, files in os.walk(ROOTDIR):
-            print(dirpath)
             for file in tqdm(files):
                 file_path = os.path.join(dirpath, file)
                 if not (os.path.isfile(file_path) and "DS_Store" not in file_path):
