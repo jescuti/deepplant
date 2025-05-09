@@ -1,6 +1,4 @@
 from rapidfuzz import fuzz
-import cv2
-from build_token_db import read_image_and_preprocess
 
 """
 TOKENS DATABASE STRUCTURE EXAMPLE

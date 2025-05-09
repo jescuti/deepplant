@@ -2,5 +2,6 @@
 image_download/herbarium_images/*
 image_download/herbarium_images/
 /image_download
-/ocr/__pycache__
+ocr/__pycache__
 preprocessing/sam_vit_h_4b8939.pth
+ocr/scrap.py

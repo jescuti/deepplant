@@ -31,13 +31,8 @@ def enhance_for_ocr(gray):
                           cv2.THRESH_BINARY | cv2.THRESH_OTSU)
     return out
 
-#  deepplant/image_download/db_labels/bdr_755459_1.jpg
-#  deepplant/image_download/db_labels/Lolium arvense_bdr_819079 copy.jpg
-#  Onosmodium molle_bdr_747661.png
-# Mertensia alpina_bdr_754912.jpg
-# gray = read_image_and_preprocess("../image_download/db_labels/Onosmodium molle_bdr_747661.png")
-# gray = read_image_and_preprocess("../image_download/db_labels/Lolium arvense_bdr_819079 copy.jpg")
-# gray = read_image_and_preprocess("../image_download/db_labels/Mertensia alpina_bdr_754912.jpg")
+# gray = read_image_and_preprocess("./394071_0.jpg")
+
 # img = cv2.GaussianBlur(img, (3,3), 0)
 # # Define alpha (contrast) and beta (brightness) values
 # alpha = 0.5 # Contrast control (1.0 means no change)
@@ -66,42 +61,44 @@ def enhance_for_ocr(gray):
 
 # cv2.imshow("preprocessing", proc)
 # cv2.waitKey(0)
-# raw = _raw_ocr(proc)
+# raw = _raw_ocr(gray)
 # print("raw:", raw)
 # print("clean:", extract_phrases_from_text(raw))
 
-# print(fuzz.partial_ratio(
-#     "James Bennett", 
-#     "oregon coll ann 1871 presented", score_cutoff=50))
+
+# FUZZY MATCH
+print(fuzz.partial_ratio(
+    "rocky mountain flora lat 3941", 
+    "flora", score_cutoff=90))
 
 
 
 ### RUN OCR ON DIRECTORY IN IMAGE_DOWNLOAD
-print("WITH ADAPTIVE THRESHOLD")
-ROOTDIR = "../image_download/db_labels"
-for file in os.listdir(ROOTDIR):
-    file_path = os.path.join(ROOTDIR, file)
-    if os.path.isfile(file_path) and "DS_Store" not in file_path:
-        print(file_path)
-        img = cv2.imread(file_path)
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        # NAH: gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+# print("WITH ADAPTIVE THRESHOLD")
+# ROOTDIR = "../image_download/db_labels"
+# for file in os.listdir(ROOTDIR):
+#     file_path = os.path.join(ROOTDIR, file)
+#     if os.path.isfile(file_path) and "DS_Store" not in file_path:
+#         print(file_path)
+#         img = cv2.imread(file_path)
+#         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+#         # NAH: gray = cv2.resize(gray, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
         
-        # contrast = (gray.max() - gray.min())/(gray.max()+1e-5)
-        # sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
+#         # contrast = (gray.max() - gray.min())/(gray.max()+1e-5)
+#         # sharpness = cv2.Laplacian(gray, cv2.CV_64F).var()
 
-        # if contrast < 0.3 or sharpness < 50:
-        #     proc = enhance_for_ocr(gray)
-        # else:
-        #     proc = gray
+#         # if contrast < 0.3 or sharpness < 50:
+#         #     proc = enhance_for_ocr(gray)
+#         # else:
+#         #     proc = gray
         
-        # thresh = cv2.adaptiveThreshold(gray_img, 255,
-	    #     cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, 11)
-        raw_text = _raw_ocr(gray)
-        print("raw text:", raw_text)
-        clean_phrases = extract_phrases_from_text(raw_text)
-        print()
-        print("clean text:", clean_phrases)
+#         # thresh = cv2.adaptiveThreshold(gray_img, 255,
+# 	    #     cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 25, 11)
+#         raw_text = _raw_ocr(gray)
+#         print("raw text:", raw_text)
+#         clean_phrases = extract_phrases_from_text(raw_text)
+#         print()
+#         print("clean text:", clean_phrases)
 
 # GENERATE PDF
 # from fpdf import FPDF
