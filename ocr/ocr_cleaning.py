@@ -8,8 +8,10 @@ from wordfreq import zipf_frequency
 nlp = spacy.load("en_core_web_sm", disable=["parser","tagger","lemmatizer","attribute_ruler"])
 
 # Pre-compile regex patterns
-_CLEAN_NON_ALNUM, _CLEAN_WORDS_WITH_DIGITS, _CLEAN_5_DIGIT_NUMS = (
-    re.compile(r"[^A-Za-z0-9\s]+"),
+_REPLACE_SANDWICHED_NON_ALNUMS, _CLEAN_NON_ALNUMS, \
+    _CLEAN_WORDS_WITH_DIGITS, _CLEAN_5_DIGIT_NUMS = (
+    re.compile(r"(?<=\w)[^\w\s]+(?=\w)"),
+    re.compile(r"[^\w\s]"),
     re.compile(r"[A-Za-z]+\d+[A-Za-z]*"),
     re.compile(r"[0-9]{5,}"),  # 5 or more digits
 )
@@ -36,10 +38,6 @@ def should_keep(token: spacy.tokens.Token, min_length: int) -> bool:
 
     # Named-entity or explicit list of names
     if token.ent_type_ or text.lower() in KNOWN_NAMES:
-        return True
-
-    # Year‐like numeric tokens
-    if text.isdecimal() and COLL_YEAR.search(text):
         return True
 
     # Otherwise: not a stopword and common in English
@@ -78,7 +76,8 @@ def extract_phrases_from_text(
         if not phrase:
             continue
         # regex cleaning
-        phrase = _CLEAN_NON_ALNUM.sub("", phrase)
+        phrase = _REPLACE_SANDWICHED_NON_ALNUMS.sub(" ", phrase)
+        phrase = _CLEAN_NON_ALNUMS.sub("", phrase)
         phrase = _CLEAN_WORDS_WITH_DIGITS.sub("", phrase)
         phrase = _CLEAN_5_DIGIT_NUMS.sub("", phrase)
         raw_phrases.append(phrase)

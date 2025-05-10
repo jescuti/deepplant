@@ -46,7 +46,7 @@ def main():
             
             # Run OCR
             phrases = run_clean_ocr(img)
-            label_db[file_path] = phrases
+            label_db[file] = phrases
             
             # Stream database to a JSON file
             if first_entry:
