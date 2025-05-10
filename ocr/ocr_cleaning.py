@@ -33,6 +33,10 @@ def is_common_english(token: str, threshold: float = 3.5) -> bool:
 
 def should_keep(token: spacy.tokens.Token, min_length: int) -> bool:
     text = token.text.strip()
+    
+    if text.isnumeric() and len(text) >= 2:
+        return True
+    
     if len(text) < min_length:
         return False
 

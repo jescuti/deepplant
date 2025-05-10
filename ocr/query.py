@@ -33,9 +33,9 @@ def generate_pdf(list_of_paths: list[str]) -> None:
     for path in list_of_paths:
         code = re.search(_BDR_CODES, path).group(0)
         pdf.cell(
-            200, 5, txt=f"https://repository.library.brown.edu/iiif/image/bdr:{code}/full/full/0/default.jpg", \
+            200, 5, txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", \
                 ln=1, align="L", \
-                link=f"https://repository.library.brown.edu/iiif/image/bdr:{code}/full/full/0/default.jpg")
+                link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
         pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
         pdf.ln(50)
 

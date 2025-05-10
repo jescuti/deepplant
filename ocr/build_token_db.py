@@ -5,10 +5,8 @@ import json
 from ocr import run_clean_ocr
 
 
-ROOTDIR = "../image_download/herbarium_images"  
-# ROOTDIR = "../image_download/db_labels"  
-# EXCLUDE_PHRASES = ["copyright", "reserved"]
-DATABASE_FILENAME = os.path.join("databases", "5k_db_2.json")
+ROOTDIR = "../image_download/db_labels"  
+DATABASE_FILENAME = os.path.join("databases", "db_labels.json")
 
 def read_image_and_preprocess(file_path):
     image = cv2.imread(file_path)
