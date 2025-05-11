@@ -1,8 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
 import "../styles/App.css";
 import "../styles/index.css";
 import "../output.css";
-import ActivityFinder from "./SearchInitiation";
 import Footer from "./Footer";
 import PottedPlant from "../assets/PottedPlant.png";
 import {
@@ -16,6 +15,36 @@ import {
   useUser,
 } from "@clerk/clerk-react";
 import SearchInitiation from "./SearchInitiation";
+import SearchResultsGallery from "./SearchResultsGallery";
+import { useState } from "react";
+
+// Wrapper for SearchInitiation to handle navigation
+function SearchInitiationWithNavigation() {
+  const navigate = useNavigate();
+  const [searchData, setSearchData] = useState(null);
+
+  const handleSearchSubmit = (data) => {
+    // Store search data in localStorage to persist between routes
+    localStorage.setItem('searchData', JSON.stringify(data));
+    // Navigate to results page
+    navigate('/search-results');
+  };
+
+  return <SearchInitiation onSubmitComplete={handleSearchSubmit} />;
+}
+
+// Wrapper for SearchResultsGallery to handle navigation
+function SearchResultsWithNavigation() {
+  const navigate = useNavigate();
+  // Retrieve search data from localStorage
+  const searchData = JSON.parse(localStorage.getItem('searchData') || '{}');
+
+  const handleBackToSearch = () => {
+    navigate('/search-initiation');
+  };
+
+  return <SearchResultsGallery searchData={searchData} onBack={handleBackToSearch} />;
+}
 
 function App() {
   return (
@@ -52,8 +81,10 @@ function App() {
           <SignedIn>
             <div className="flex-grow">
               <Routes>
-                <Route path="/" element={<SearchInitiation />} />
-                <Route path="/search-initiation" element={<SearchInitiation />} />
+                <Route path="/" element={<SearchInitiationWithNavigation />} />
+                <Route path="/search-initiation" element={<SearchInitiationWithNavigation />} />
+                <Route path="/search-results" element={<SearchResultsWithNavigation />} />
+                <Route path="/profile" element={<UserProfile />} />
               </Routes>
             </div>
           </SignedIn>
