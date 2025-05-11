@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Camera, X } from "lucide-react";
 import Webcam from "react-webcam";
 
-export default function SearchInitiation() {
+export default function SearchInitiation({ onSubmitComplete }) {
   const variableRef = useRef(null);
   const [variableSelection, selectVariable] = useState('');
   const [image, setImage] = useState(null);
@@ -10,6 +10,11 @@ export default function SearchInitiation() {
   const fileInputRef = useRef(null);
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
+
+  // text input
+  const [inputTextMode, setInputTextMode] = useState(false);
+  const [inputText, setInputText] = useState('');
+
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -42,27 +47,50 @@ export default function SearchInitiation() {
   };
 
   const handleSubmit = () => {
-    if (!variableSelection) {
+    if (!variableSelection && !inputTextMode) {
       alert("Please select a label type");
       return;
     }
     
-    if (!image) {
-      alert("Please upload or capture an image");
+    if (!image && !inputText.trim()) {
+      alert("Please upload, capture an image, or enter text.");
       return;
     }
     
+    if (!image && !inputText.trim()) {
+      alert("Please upload, capture an image, or enter text.");
+      return;
+    }
+    
+    const submission = {
+      labelType: variableSelection,
+      imageData: image ? image.substring(0, 100) + "..." : null,
+      textData: inputTextMode ? inputText.trim() : null
+    };
+    
     setLoading(true);
     
+    // Simulate API call with setTimeout
     setTimeout(() => {
       console.log("Submitting:", {
         labelType: variableSelection,
-        imageData: image.substring(0, 100) + "..."
-      });
+        imageData: image ? image.substring(0, 100) + "..." : null,
+        textData: inputTextMode ? inputText.trim() : null
+      });      
       
-      setLoading(false); 
-      alert("Image submitted successfully!");
-    
+      setLoading(false);
+      
+      // If onSubmitComplete callback is provided, call it
+      // This allows the parent component to handle navigation
+      if (onSubmitComplete && typeof onSubmitComplete === 'function') {
+        onSubmitComplete({
+          labelType: variableSelection,
+          imagePreview: image,
+          text: inputText.trim()
+        });        
+      } else {
+        alert("Image submitted successfully!");
+      }
     }, 1000);
   };
 
@@ -99,6 +127,16 @@ export default function SearchInitiation() {
             >
               <Camera size={20} className="mr-2" />
               <span>Take Photo</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setInputTextMode(true);
+                setImage(null);
+              }}
+              className="bg-[#00bd9d] lexend-deca hover:bg-green-600 text-white px-4 py-2 rounded flex items-center"
+            >
+              <span>Input Text String</span>
             </button>
             
             <input
@@ -153,6 +191,29 @@ export default function SearchInitiation() {
             {loading ? 'Submitting...' : 'Submit Image'}
           </button>
         )}
+
+        {inputTextMode && (
+          <div className="w-full max-w-md mt-4">
+            <textarea
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              placeholder="Enter text here..."
+              className="w-full p-3 border border-gray-300 rounded"
+              rows={4}
+            />
+          </div>
+        )}
+
+        {(image || (inputTextMode && inputText.trim())) && !showCamera && (
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className={`bg-[#6bc07d] hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {loading ? 'Submitting...' : 'Submit'}
+          </button>
+        )}
+
       </div>
     </div>
   );

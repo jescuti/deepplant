@@ -28,7 +28,7 @@ def cluster_dataset(segmented_labels_dir):
    return dataset
 
 # takes in a path to the search image and dataset, as well as k, the number of results to return
-# returns top k similar images to the search image
+# returns top k similar images to the search image, as well as their similarity scores
 def query_image(image_path, dataset, k):
    model_name = "ViT-B/32"
    device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -51,11 +51,13 @@ def query_image(image_path, dataset, k):
    top_k_indices = sorted_indices[:k]
 
    top_similar_images = []
+   top_similarity_scores = []
    for i in top_k_indices:
       sample = dataset[sample_ids[i]]
       img = Image.open(sample.filepath)
       plt.imshow(img)
       plt.show()
       top_similar_images.append(img)
+      top_similarity_scores.append(similarity_scores[i])
 
-   return top_similar_images
+   return top_similar_images, similarity_scores
