@@ -34,6 +34,9 @@ OCR Engine modes (OEM):
 MYCONFIG = r"--psm 6 --oem 3"
 
 def read_image_and_preprocess(file_path):
+    """
+    Read and preprocess image.
+    """
     image = cv2.imread(file_path)
     if image is None:
         return None
@@ -42,31 +45,7 @@ def read_image_and_preprocess(file_path):
     return gray_image
 
 
-def _raw_ocr(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> Any:
-    """
-    Run OCR on the input image using a specific output mode.
-
-    Parameters
-    ----------
-        image : np.ndarray
-            The image to run OCR on.
-        output_mode: Literal["txt", "dct"]
-            An output mode that belongs to the specified list. Default: "txt".
-    
-    Returns
-    -------
-    The OCR output in the specified format.
-    """
-    # Run tesseract OCR for text extraction
-    if output_mode == "txt":
-        out = pytesseract.image_to_string(image, config=MYCONFIG)
-    elif output_mode == "dct":
-        out = pytesseract.image_to_data(image, config=MYCONFIG, output_type=pytesseract.Output.DICT)
-
-    return out
-
-
-def run_clean_ocr(file_path: str, output_mode: Literal["txt", "dct"] = "txt") -> Any:
+def run_clean_ocr(file_path: str, print_text: bool = False) -> Any:
     """
     Run tesseract OCR on the input image and return a list of cleaned text phrases
     """
@@ -74,12 +53,9 @@ def run_clean_ocr(file_path: str, output_mode: Literal["txt", "dct"] = "txt") ->
     if image is None:
         print(f"ERROR: Could not load image at {file_path!r}")
         return None
-    if output_mode:
-        raw = _raw_ocr(image, output_mode)
-    else:
-        raw = _raw_ocr(image)
-    print("Raw text detected by OCR:\n", raw)
-    
+    raw = pytesseract.image_to_string(image, config=MYCONFIG)
     cleaned_phrases = extract_phrases_from_text(raw)
-    print("Cleaned extracted text:\n", cleaned_phrases)
+    if print_text:
+        print("Raw text detected by OCR:\n", raw)
+        print("Cleaned extracted text:\n", cleaned_phrases)
     return cleaned_phrases

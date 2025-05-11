@@ -1,6 +1,6 @@
 import re
-import nltk
-nltk.download('stopwords')
+# import nltk
+# nltk.download('stopwords')
 from nltk.corpus import stopwords
 import spacy, spacy.tokens
 from wordfreq import zipf_frequency
@@ -27,13 +27,44 @@ KNOWN_NAMES = {"olneyanum", "flora", "planta", "plant", "james", "herbarium", \
 # ------------------------- CLEANING -------------------------
 def is_common_english(token: str, threshold: float = 3.5) -> bool:
     """
-    zipf_frequency returns a log-scaled frequency (1-7);
-    3.0 is roughly words occurring around once per million words.
+    Check whether a word is "common." A log-scaled frequency of 3.5 is roughly
+    words occurring around once per million words.
+
+    Parameters
+    ----------
+    token : str
+        A token to check for commonality
+    threshold : float
+        The threshold for how common each token should be
+
+    Returns
+    -------
+    bool
+        True if a word's frequency exceeds the threshold. False otherwise.
     """
     return zipf_frequency(token.lower(), "en") >= threshold
 
 
 def should_keep(token: spacy.tokens.Token, min_length: int) -> bool:
+    """
+    Check if a token is "important" and should be kept. Criteria:
+        - Has at least two numbers
+        - String length greater than min_length
+        - Contains named entities
+        - Not a stopword
+        - Is "common enough" (see is_common_english)
+    
+    Parameters
+    ----------
+    token : spacy.tokens.Token
+        A token to check for importance
+    threshold : float
+
+    Returns
+    -------
+    bool
+        True if the token passes any of the above criteria. False otherwise.
+    """
     text = token.text.strip()
     
     if text.isnumeric() and len(text) >= 2:

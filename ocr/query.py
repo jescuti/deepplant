@@ -1,12 +1,12 @@
 import json
 from rapidfuzz import fuzz
 import re
+import os
 from fpdf import FPDF
 from ocr import run_clean_ocr
 
 _BDR_CODES = re.compile(r'([0-9]{6})')
-DATABASE_FILENAME = "token_db.json"
-OUTPUT_FILENAME = "output.pdf"
+DATABASE_FILENAME = "./databases/db_labels.json"
 
 """
 TOKENS DATABASE STRUCTURE EXAMPLE
@@ -19,7 +19,46 @@ label_db = {
   ...
 }
 """
-def search_text_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str]:
+
+def generate_pdf(list_of_paths: list[str], query: str) -> None:
+    """
+    Generates a PDF file that contains the cropped out labels and their corresponding image URLs.
+
+    URL format: https://repository.library.brown.edu/iiif/image/bdr:000000/full/full/0/default.jpg
+    
+    Parameters
+    ----------
+    list_of_paths : list[str]
+        A list of image paths, assumed to contain the herbarium code `bdr_000000.`
+    query :  str
+        The input query, either a text label or a cleaned image path. 
+    Returns
+    -------
+    None
+    """
+    output_filename = os.path.join("output", f"{query}.pdf")
+
+    print(f"Generating output PDF at {output_filename}...")
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12, style="U")
+    pdf.set_text_color(0, 0, 255)
+    pdf.set_auto_page_break(True)
+
+    for path in list_of_paths:
+        code = re.search(_BDR_CODES, path).group(0) # type: ignore
+        pdf.cell(
+            200, 5, 
+            txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", # type: ignore
+            ln=1, align="L", 
+            link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
+        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
+        pdf.ln(50)
+
+    pdf.output(output_filename)
+
+
+def search_text_phrase(query: str, label_db: dict[str, list[str]], threshold=70) -> list[str]:
     """
     Given an input_phrase, search the label database for images that contain that phrase.
 
@@ -34,14 +73,18 @@ def search_text_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> lis
     -------
     A list of image paths whose labels contain the search phrase.
     """
-    output : list[str] = []
+    matched_paths = set()
 
     for image_path, phrases in label_db.items():
         for phrase in phrases:
-            if fuzz.ratio(input_phrase, phrase, score_cutoff=70):
-                if image_path not in output:
-                    output.append(image_path)
-    return output
+            if query in phrase:  # Substring match
+                matched_paths.add(image_path)
+                break
+            elif fuzz.ratio(query, phrase) >= threshold:  # Fuzzy match with threshold
+                matched_paths.add(image_path)
+                break
+
+    return list(matched_paths)
 
 
 def search_image_phrase(input_phrases: list[str], label_db: dict[str, list[str]]) -> list[str]:
@@ -63,51 +106,16 @@ def search_image_phrase(input_phrases: list[str], label_db: dict[str, list[str]]
     -------
     A list of image paths whose labels contain the search phrases.
     """
-    output : list[str] = []
-
+    matched_paths = set()
     joined_input_phrase = " ".join(input_phrases)
 
     for image_path, image_phrases in label_db.items():
         joined_item_phrase = " ".join(image_phrases)
         if fuzz.ratio(joined_input_phrase, joined_item_phrase, score_cutoff=70):
-            if image_path not in output:
-                output.append(image_path)
-    return output
+            matched_paths.add(image_path)
+            break
 
-
-def generate_pdf(list_of_paths: list[str]) -> None:
-    """
-    Generates a PDF file that contains the cropped out labels and their corresponding image URLs.
-
-    URL format: https://repository.library.brown.edu/iiif/image/bdr:000000/full/full/0/default.jpg
-    
-    Parameters
-    ----------
-    list_of_paths : list[str]
-        A list of image paths, assumed to be of format `bdr_000000.`
-
-    Returns
-    -------
-    None
-    """
-    print(f"Generating output PDF at {OUTPUT_FILENAME}...")
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", size=12, style="U")
-    pdf.set_text_color(0, 0, 255)
-    pdf.set_auto_page_break(True)
-
-    for path in list_of_paths:
-        code = re.search(_BDR_CODES, path).group(0) # type: ignore
-        pdf.cell(
-            200, 5, 
-            txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", # type: ignore
-            ln=1, align="L", 
-            link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
-        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
-        pdf.ln(50)
-
-    pdf.output(OUTPUT_FILENAME)
+    return list(matched_paths)
 
 
 def query_by_label(text_label: str) -> None:
@@ -123,12 +131,12 @@ def query_by_label(text_label: str) -> None:
     list_of_paths = search_text_phrase(cleaned_label, database)
     
     # Generate PDf
-    generate_pdf(list_of_paths)
+    generate_pdf(list_of_paths, text_label)
     
 
 def query_by_image(file_path: str) -> None:
     """
-    Given an image of a label, extract texts, and find images that match.
+    Given a label image, extract texts, and find images that match.
     """
     # Load text database
     with open(DATABASE_FILENAME, "rb") as f:
@@ -141,6 +149,7 @@ def query_by_image(file_path: str) -> None:
 
     # Search database and get a list of paths
     list_of_paths = search_image_phrase(input_phrases, database)
+    cleaned_input_path, _ = os.path.splitext(os.path.basename(file_path))
 
     # Generate PDF
-    generate_pdf(list_of_paths)
+    generate_pdf(list_of_paths, cleaned_input_path)

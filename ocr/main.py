@@ -5,7 +5,9 @@ from ocr import run_clean_ocr
 from build_db import build_db
 from query import query_by_image, query_by_label
 
-DATABASE_FILENAME = "token_db.json"
+# Arguments for build_db
+LABEL_DIR         = "../image_download/db_labels"  
+DATABASE_FILENAME = "./databases/db_labels.json"
 
 def main():
     """
@@ -56,12 +58,12 @@ def main():
         # if path does exist, run OCR
         else:
             print(f'Running OCR on image: {args.image}')
-            run_clean_ocr(args.image)
+            run_clean_ocr(args.image, True)
 
     # if build database
     elif args.task == 'build_db':
         print('Building text database...')
-        build_db()
+        build_db(LABEL_DIR, DATABASE_FILENAME)
     
     # if query
     elif args.task == 'query':

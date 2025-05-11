@@ -4,23 +4,34 @@ import json
 import time
 from ocr import run_clean_ocr
 
-ROOTDIR           = "../image_download/db_labels"  
-DATABASE_FILENAME = "./databases/db_labels.json"
+def build_db(image_dir: str, db_filename: str) -> None:
+    """
+    Build a text database as a dictionary and stream to a JSON file.
 
-def build_db():
-    # Populate a database of image path to text tokens and phrase
-    label_db: dict[str, list[str]] = {}
-    first_entry = True
+    Parameters
+    ----------
+    image_dir : str
+        Path to the label image folder
+    db_filename : str
+        Name of the JSON file to write the database to
+
+    Returns
+    -------
+    None
+    """
+    first_entry = True  # marker for json formatting
+    num_images = len(os.listdir(image_dir))
     
-    print(f"Writing to {DATABASE_FILENAME}...")
+    print(f"Writing to {db_filename}...")
     logic_start = time.time()
-    with open(DATABASE_FILENAME, "w", encoding="utf-8", buffering=1) as f:
+
+    with open(db_filename, "w", encoding="utf-8", buffering=1) as f:
         f.write("{\n")
 
         # Recursively search all subdirectories for files       
         # If just one parent folder, use os.listdir
-        for file in tqdm(os.listdir(ROOTDIR)):
-            file_path = os.path.join(ROOTDIR, file)
+        for file in tqdm(os.listdir(image_dir)):
+            file_path = os.path.join(image_dir, file)
         # for dirpath, _, files in os.walk(ROOTDIR):
         #     for file in tqdm(files):
         #         file_path = os.path.join(dirpath, file)
@@ -32,9 +43,8 @@ def build_db():
             phrases = run_clean_ocr(file_path)
             if phrases is None:
                 continue
-            label_db[file_path] = phrases
             
-            # Stream database to a JSON file
+            # Stream database pair to a JSON file
             if first_entry:
                 first_entry = False
             else:
@@ -44,6 +54,7 @@ def build_db():
                 f"{json.dumps(phrases, ensure_ascii=False)}"
             )
         f.write("\n}\n")
+
     logic_end = time.time()
     print("Finished building text database. Average runtime per image out of " 
-        f"{len(label_db)} images: {(logic_end - logic_start)/len(label_db):.5f}")
+        f"{num_images} images: {(logic_end - logic_start)/num_images:.5f}")
