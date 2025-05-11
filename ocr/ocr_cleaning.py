@@ -1,4 +1,6 @@
 import re
+import nltk
+nltk.download('stopwords')
 from nltk.corpus import stopwords
 import spacy, spacy.tokens
 from wordfreq import zipf_frequency
@@ -19,7 +21,7 @@ _REPLACE_SANDWICHED_NON_ALNUMS, _CLEAN_NON_ALNUMS, \
 STOP_WORDS = set(stopwords.words("english")) | {"like"}
 KNOWN_NAMES = {"olneyanum", "flora", "planta", "plant", "james", "herbarium", \
                "howells", "oregonenses", "texan"}
-COLL_YEAR = re.compile("^(1[6-9[]|20)[0-9]{2}$")
+# COLL_YEAR = re.compile("^(1[6-9[]|20)[0-9]{2}$")
 
 
 # ------------------------- CLEANING -------------------------
@@ -98,9 +100,3 @@ def extract_phrases_from_text(
         cleaned_norms.append(norm)
 
     return cleaned_norms
-
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()

@@ -1,13 +1,79 @@
 import json
+from rapidfuzz import fuzz
 import re
-import time
 from fpdf import FPDF
 from ocr import run_clean_ocr
-from build_token_db import read_image_and_preprocess, DATABASE_FILENAME
-from search_db import search_phrase, search_list_of_phrases
 
 _BDR_CODES = re.compile(r'([0-9]{6})')
+DATABASE_FILENAME = "token_db.json"
 OUTPUT_FILENAME = "output.pdf"
+
+"""
+TOKENS DATABASE STRUCTURE EXAMPLE
+
+label_db = {
+  "./images/Mertensia alpina_bdr_754912.jpg": [
+    "rocky mountain flora lat 3941",
+    "ehall harbour colls 1862"
+  ],
+  ...
+}
+"""
+def search_text_phrase(input_phrase: str, label_db: dict[str, list[str]]) -> list[str]:
+    """
+    Given an input_phrase, search the label database for images that contain that phrase.
+
+    Parameters
+    ----------
+    input_phrase : str
+        The input phrase
+    label_db : dict[str, list[str]]
+        The dictionary database that stores pairs of (image_path, list_of_phrases)
+        
+    Returns
+    -------
+    A list of image paths whose labels contain the search phrase.
+    """
+    output : list[str] = []
+
+    for image_path, phrases in label_db.items():
+        for phrase in phrases:
+            if fuzz.ratio(input_phrase, phrase, score_cutoff=70):
+                if image_path not in output:
+                    output.append(image_path)
+    return output
+
+
+def search_image_phrase(input_phrases: list[str], label_db: dict[str, list[str]]) -> list[str]:
+    """
+    Given a list of phrases from an input image label, search the label database 
+        for images that contain those phrases. 
+    
+    Approach: Join all phrases in the input list, fuzzy match against joined phrases
+        in each database image
+    
+    Parameters
+    ----------
+    input_phrases : list[str]
+        A list of input phrases, extracted by OCR from the input image
+    label_db : dict[str, list[str]]
+        The dictionary database that stores pairs of (image_path, list_of_phrases)
+        
+    Returns
+    -------
+    A list of image paths whose labels contain the search phrases.
+    """
+    output : list[str] = []
+
+    joined_input_phrase = " ".join(input_phrases)
+
+    for image_path, image_phrases in label_db.items():
+        joined_item_phrase = " ".join(image_phrases)
+        if fuzz.ratio(joined_input_phrase, joined_item_phrase, score_cutoff=70):
+            if image_path not in output:
+                output.append(image_path)
+    return output
+
 
 def generate_pdf(list_of_paths: list[str]) -> None:
     """
@@ -24,6 +90,7 @@ def generate_pdf(list_of_paths: list[str]) -> None:
     -------
     None
     """
+    print(f"Generating output PDF at {OUTPUT_FILENAME}...")
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12, style="U")
@@ -31,68 +98,49 @@ def generate_pdf(list_of_paths: list[str]) -> None:
     pdf.set_auto_page_break(True)
 
     for path in list_of_paths:
-        code = re.search(_BDR_CODES, path).group(0)
+        code = re.search(_BDR_CODES, path).group(0) # type: ignore
         pdf.cell(
-            200, 5, txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", \
-                ln=1, align="L", \
-                link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
+            200, 5, 
+            txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", # type: ignore
+            ln=1, align="L", 
+            link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
         pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
         pdf.ln(50)
 
     pdf.output(OUTPUT_FILENAME)
 
 
-def query_by_label(text_label, database):
+def query_by_label(text_label: str) -> None:
     """
     Given a text label, clean label, and find images that match.
     """
+    # Load text database
+    with open(DATABASE_FILENAME, "rb") as f:
+        database = json.load(f)
+
+    # Search database and get a list of paths
     cleaned_label = text_label.strip().lower()
-    list_of_paths = search_phrase(cleaned_label, database)
+    list_of_paths = search_text_phrase(cleaned_label, database)
     
-    # Generate pdf
-    return list_of_paths
+    # Generate PDf
+    generate_pdf(list_of_paths)
     
 
-def query_by_image(file_path: str, database: dict[str, list[str]], labeled: bool=True):
+def query_by_image(file_path: str) -> None:
     """
     Given an image of a label, extract texts, and find images that match.
     """
-    # Read in input image
-    img = read_image_and_preprocess(file_path)
-    if img is None:
-        raise FileNotFoundError(f"Could not load image at {file_path!r}")
+    # Load text database
+    with open(DATABASE_FILENAME, "rb") as f:
+        database = json.load(f)
 
     # Run OCR on recognized labels and get a list of phrases
-    input_phrases = run_clean_ocr(img)
+    input_phrases = run_clean_ocr(file_path)
+    if input_phrases is None:
+        raise FileNotFoundError(f"Could not load image at {file_path!r}")
 
     # Search database and get a list of paths
-    list_of_paths = search_list_of_phrases(input_phrases, database)
-    return list_of_paths
+    list_of_paths = search_image_phrase(input_phrases, database)
 
-
-def main():
-    with open("databases/db_labels.json", "rb") as f:
-    # with open(DATABASE_FILENAME, "rb") as f:
-        database = json.load(f)
-    
-    ### TEST QUERY BY LABEL
-    text_label = "rocky mountain flora lat 3941"
-    logic_start = time.time()
-    list_of_paths = query_by_label(text_label, database)
-    num_images = len(list_of_paths)
-    print(f"Finished querying. Number of images found: {num_images}.")
-    print("Started generating PDF...")
-    generate_pdf(list_of_paths)  # This step generally takes the longest
-    logic_end = time.time()
-    print("Finished generating PDF!")
-    total_time = logic_end - logic_start
-    print(f"Average runtime over {num_images} images: {total_time/num_images:.5f} seconds")
-
-    ### TEST QUERY BY IMAGE
-    # image_path = "../image_download/db_labels/Mertensia alpina_bdr_754912.jpg"
-    # list_of_paths = query_by_image(image_path, database)
-    # generate_pdf(list_of_paths)
-
-
-if __name__ == "__main__":
-    main()
+    # Generate PDF
+    generate_pdf(list_of_paths)

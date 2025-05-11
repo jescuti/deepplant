@@ -1,6 +1,7 @@
 from typing import Any, Literal
 import numpy as np
 import pytesseract
+import cv2
 from ocr_cleaning import extract_phrases_from_text
 
 '''
@@ -32,6 +33,15 @@ OCR Engine modes (OEM):
 
 MYCONFIG = r"--psm 6 --oem 3"
 
+def read_image_and_preprocess(file_path):
+    image = cv2.imread(file_path)
+    if image is None:
+        return None
+    gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    return gray_image
+
+
 def _raw_ocr(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> Any:
     """
     Run OCR on the input image using a specific output mode.
@@ -56,13 +66,20 @@ def _raw_ocr(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> A
     return out
 
 
-def run_clean_ocr(image: np.ndarray, output_mode: Literal["txt", "dct"] = "txt") -> list[str]:
+def run_clean_ocr(file_path: str, output_mode: Literal["txt", "dct"] = "txt") -> Any:
     """
     Run tesseract OCR on the input image and return a list of cleaned text phrases
     """
+    image = read_image_and_preprocess(file_path)
+    if image is None:
+        print(f"ERROR: Could not load image at {file_path!r}")
+        return None
     if output_mode:
         raw = _raw_ocr(image, output_mode)
     else:
         raw = _raw_ocr(image)
+    print("Raw text detected by OCR:\n", raw)
+    
     cleaned_phrases = extract_phrases_from_text(raw)
+    print("Cleaned extracted text:\n", cleaned_phrases)
     return cleaned_phrases

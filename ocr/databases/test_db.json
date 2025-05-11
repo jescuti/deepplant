@@ -174,56 +174,205 @@
         "winchester mass",
         "coll batchelder"
     ],
-    "394732_67.jpg": [],
-    "389582_47.jpg": [],
-    "389845_57.jpg": [],
-    "394986_0.jpg": [],
+    "394732_67.jpg": [
+        "parker",
+        "camden new jersey",
+    ],
+    "389582_47.jpg": [
+        "collected",
+        "date",
+        "bailey",
+        "provdence"
+    ],
+    "389845_57.jpg": [
+        "flora north america",
+        "collected",
+        "date",
+        "bailey",
+        "providence"
+    ],
+    "394986_0.jpg": [
+        "field england botanical club",
+        "flora massachusetts worcester county",
+        "blackstone",
+        "Exdwldak bean schwrenfurth"
+    ],
     "746407_20.jpg": [],
-    "826399_12.jpg": [],
-    "395078_0.jpg": [],
-    "390678_24.jpg": [],
-    "391108_0.jpg": [],
-    "391138_1.jpg": [],
+    "826399_12.jpg": [
+        "university"
+        ],
+    "395078_0.jpg": [
+        "herbarium james bennett",
+        "presented",
+        "brown university herbarium"
+    ],
+    "390678_24.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "391108_0.jpg": [
+        "flora texana exsiccata",
+        "fase lindheimer 1846"
+    ],
+    "391138_1.jpg": [
+        "herbarium james bennett",
+        "presented",
+        "brown university herbarium"
+    ],
     "390831_23.jpg": [],
     "390832_22.jpg": [],
-    "391701_1.jpg": [],
-    "391249_6.jpg": [],
-    "391743_9.jpg": [],
-    "393547_0.jpg": [],
-    "393443_0.jpg": [],
-    "393772_12.jpg": [],
-    "393807_1.jpg": [],
-    "393917_23.jpg": [],
-    "393970_3.jpg": [],
-    "393991_8.jpg": [],
-    "758457_49.jpg": [],
-    "854493_7.jpg": [],
-    "741766_14.jpg": [],
-    "753213_52.jpg": [],
-    "702466_21.jpg": [],
-    "673051_27.jpg": [],
-    "950486_19.jpg": [],
-    "597344_20.jpg": [],
-    "825078_16.jpg": [],
-    "396587_0.jpg": [],
-    "744864_39.jpg": [],
-    "696910_40.jpg": [],
-    "593190_39.jpg": [],
-    "704689_47.jpg": [],
-    "702824_40.jpg": [],
-    "855905_6.jpg": [],
-    "704270_16.jpg": [],
-    "759374_14.jpg": [],
-    "759374_4.jpg": [],
-    "396568_0.jpg": [],
-    "853555_50.jpg": [],
-    "393503_35.jpg": [],
-    "389479_42.jpg": [],
-    "399267_0.jpg": [],
-    "390268_34.jpg": [
-        
+    "391701_1.jpg": [
+        "herbarium olneyanum"
     ],
-    "390015_0.jpg": [],
+    "391249_6.jpg": [],
+    "391743_9.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "393547_0.jpg": [
+        "herbarium olneyanum"
+    ],
+    "393443_0.jpg": [
+        "herbarium olneyanum"
+    ],
+    "393772_12.jpg": [
+        "carices americae septentrionalis",
+        "sartwell",
+        "carex miliacea muki",
+        "prasina wahl",
+        "penn yan new york"
+    ],
+    "393807_1.jpg": [
+        "herbarium olneyanum"
+    ],
+    "393917_23.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "393970_3.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "393991_8.jpg": [
+        "carices boreali americanae",
+        "coll variokum distribuit olney akno 1870",
+        "carex scopario schk olney ined",
+        "providence rhode island bauntaimila finautago county",
+        "illinois"
+    ],
+    "758457_49.jpg": [],
+    "854493_7.jpg": [
+        "herbarium olneyanum"
+    ],
+    "741766_14.jpg": [
+        "herbarium olneyanum"
+    ],
+    "753213_52.jpg": [],
+    "702466_21.jpg": [
+        "herbarium james bennett",
+        "presented",
+        "brown university herbarium"
+    ],
+    "673051_27.jpg": [
+        "idaho plants",
+        "collected about lake waha perces county",
+        "gertrude heller",
+        "altitude 2000 3500 feet 1896"
+    ],
+    "950486_19.jpg": [
+        "herb william stout york",
+    ],
+    "597344_20.jpg": [
+        "herbarium brown university",
+        "providence",
+        "andropogon virginicus",
+        "tetrastachys hack",
+        "pine barrens munden",
+        "church sept 1937",
+        "brown"
+    ],
+    "825078_16.jpg": [
+        "pringle",
+        "plantae mexicanae",
+        "1892",
+        "state mexico",
+        "4294 andropogon provincialis",
+        "prairies valley toluca",
+        "october"
+    ],
+    "396587_0.jpg": [
+        "herb burlingame providence",
+    ],
+    "744864_39.jpg": [
+        "collected olivet michigan",
+        "habitat",
+        "coll date"
+    ],
+    "696910_40.jpg": [
+        "east florida coll edward palmer 1874"
+    ],
+    "593190_39.jpg": [
+        "flora england states",
+        "collected franklin collins providence",
+        "providence"
+    ],
+    "704689_47.jpg": [
+        "brown university",
+        "herbarium"
+    ],
+    "702824_40.jpg": [
+        "cornell university herbarium"
+    ],
+    "855905_6.jpg": [],
+    "704270_16.jpg": [
+        "herbarium brown university",
+        "providence"
+    ],
+    "759374_14.jpg": [
+        "herbarium olneyanum"
+    ],
+    "759374_4.jpg": [
+        "coll thurber",
+        "chihuahua mexico"
+    ],
+    "396568_0.jpg": [
+        "herbarium olneyanum"
+    ],
+    "853555_50.jpg": [],
+    "393503_35.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "389479_42.jpg": [
+        "brown university herbarium",
+        "herbarium geological survey canada",
+        "plants from manitoba",
+        "collected alon line grand trunk pacific railway john maculni",
+        "william herriot 1998"
+    ],
+    "399267_0.jpg": [
+        "herb geological survey canada",
+        "canadian plants",
+        "collector john macoun"
+    ],
+    "390268_34.jpg": [
+        "herbarium james bennett",
+        "presented",
+        "brown university herbarium"
+    ],
+    "390015_0.jpg": [
+        "herbarium olneyanum"
+    ],
     "389904_21.jpg": [
         "brown university",
         "bequest",
@@ -257,6 +406,39 @@
     "390293_15.jpg": [
         "rocky mountain flora 3941",
         "hall harbour colls 1862"
+    ],
+    "394202_1.jpg": [
+        "herbarium james bennett",
+        "presented",
+        "brown university herbarium"
+    ],
+    "394218_8.jpg": [],
+    "394806_30.jpg": [
+        "brown university",
+        "bequest",
+        "stephen olney",
+        "1878"
+    ],
+    "406783_24.jpg": [
+        "plantae texanae",
+        "rhynchospora filifolia gray",
+        "eastern texas coll elihu hall 1872"
+    ],
+    "408049_0.jpg": [
+        "herbarium olneyanum"
+    ],
+    "422240_0.jpg": [],
+    "750053_27.jpg": [
+        "south oregon plants",
+        "colde cusick 1902",
+        "2886",
+        "galium bolanderi gray",
+        "purpie",
+        "hins ashland butte"
+    ],
+    "756606_12.jpg": [
+        "south florida flora",
+        "legit garber",
+        "columbia penna"
     ]
 }
-    
