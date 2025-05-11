@@ -7,6 +7,8 @@ from ocr import run_clean_ocr
 
 _BDR_CODES = re.compile(r'([0-9]{6})')
 DATABASE_FILENAME = "./databases/db_labels.json"
+OUTPUT_DIR = "./"
+ROOTDIR = "./"
 
 """
 TOKENS DATABASE STRUCTURE EXAMPLE
@@ -20,40 +22,37 @@ label_db = {
 }
 """
 
-def generate_pdf(list_of_paths: list[str], query: str) -> None:
+def generate_pdf(list_of_paths: list[str], output_filename: str) -> None:
     """
     Generates a PDF file that contains the cropped out labels and their corresponding image URLs.
-
-    URL format: https://repository.library.brown.edu/iiif/image/bdr:000000/full/full/0/default.jpg
-    
-    Parameters
-    ----------
-    list_of_paths : list[str]
-        A list of image paths, assumed to contain the herbarium code `bdr_000000.`
-    query :  str
-        The input query, either a text label or a cleaned image path. 
-    Returns
-    -------
-    None
     """
-    output_filename = os.path.join("output", f"{query}.pdf")
-
-    print(f"Generating output PDF at {output_filename}...")
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12, style="U")
     pdf.set_text_color(0, 0, 255)
-    pdf.set_auto_page_break(True)
+    pdf.set_auto_page_break(True, margin=10)
+
+    image_height = 40
+    spacing_after_image = 10
 
     for path in list_of_paths:
+        if "/" not in path:
+            path = os.path.join(ROOTDIR, path)
+
         code = re.search(_BDR_CODES, path).group(0) # type: ignore
-        pdf.cell(
-            200, 5, 
-            txt=f"https://repository.library.brown.edu/studio/item/bdr:{code}/", # type: ignore
-            ln=1, align="L", 
-            link=f"https://repository.library.brown.edu/studio/item/bdr:{code}/")
-        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=40)
-        pdf.ln(50)
+        
+        # Check remaining space on page
+        current_y = pdf.get_y()
+        if current_y + image_height + spacing_after_image > pdf.h - pdf.b_margin:
+            pdf.add_page()
+
+        # Add hyperlink text
+        link_url = f"https://repository.library.brown.edu/studio/item/bdr:{code}/"
+        pdf.cell(200, 5, txt=link_url, ln=1, align="L", link=link_url) # type: ignore
+        
+        # Add image
+        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=image_height)
+        pdf.ln(image_height + spacing_after_image)
 
     pdf.output(output_filename)
 
@@ -118,9 +117,14 @@ def search_image_phrase(input_phrases: list[str], label_db: dict[str, list[str]]
     return list(matched_paths)
 
 
-def query_by_label(text_label: str) -> None:
+def query_by_label(text_label: str) -> int:
     """
     Given a text label, clean label, and find images that match.
+
+    Returns
+    -------
+    int
+        The number of matched images.
     """
     # Load text database
     with open(DATABASE_FILENAME, "rb") as f:
@@ -131,12 +135,22 @@ def query_by_label(text_label: str) -> None:
     list_of_paths = search_text_phrase(cleaned_label, database)
     
     # Generate PDf
-    generate_pdf(list_of_paths, text_label)
+    query = text_label.replace(" ", "_")
+    output_filename = os.path.join(OUTPUT_DIR, "output", f"{query}.pdf")
+    print(f"Generating output PDF at {output_filename}...")
+    generate_pdf(list_of_paths, output_filename)
+    
+    return len(list_of_paths)
     
 
-def query_by_image(file_path: str) -> None:
+def query_by_image(file_path: str) -> int:
     """
     Given a label image, extract texts, and find images that match.
+
+    Returns
+    -------
+    int
+        The number of matched images.
     """
     # Load text database
     with open(DATABASE_FILENAME, "rb") as f:
@@ -149,7 +163,11 @@ def query_by_image(file_path: str) -> None:
 
     # Search database and get a list of paths
     list_of_paths = search_image_phrase(input_phrases, database)
-    cleaned_input_path, _ = os.path.splitext(os.path.basename(file_path))
 
     # Generate PDF
-    generate_pdf(list_of_paths, cleaned_input_path)
+    query, _ = os.path.splitext(os.path.basename(file_path))
+    output_filename = os.path.join(OUTPUT_DIR, "output", f"{query}.pdf")
+    print(f"Generating output PDF at {output_filename}...")
+    generate_pdf(list_of_paths, output_filename)
+
+    return len(list_of_paths)

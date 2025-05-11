@@ -1,6 +1,6 @@
 import argparse
 import os
-import json
+import time
 from ocr import run_clean_ocr
 from build_db import build_db
 from query import query_by_image, query_by_label
@@ -55,15 +55,21 @@ def main():
         if not os.path.exists(args.image):
             print('The file path you specified: ' + args.image + ' does not exist. Try running something like: '
                   '\n python3 main.py -t ocr -i ./images/label_1.jpg')
+            return
         # if path does exist, run OCR
         else:
             print(f'Running OCR on image: {args.image}')
             run_clean_ocr(args.image, True)
+            print(f'Finished OCR')
 
     # if build database
     elif args.task == 'build_db':
-        print('Building text database...')
-        build_db(LABEL_DIR, DATABASE_FILENAME)
+        print(f'Building text database. Writing to {DATABASE_FILENAME}...')
+        logic_start = time.time()
+        num_images = build_db(LABEL_DIR, DATABASE_FILENAME)
+        logic_end = time.time()
+        print('Finished building text database. Average runtime per image out of ' 
+              f'{num_images} images: {(logic_end - logic_start) / num_images:.5f}')
     
     # if query
     elif args.task == 'query':
@@ -72,18 +78,27 @@ def main():
             if not os.path.exists(args.image):
                 print(f'The file path you specified: {args.image} does not exist. '
                       'Try running something like: python3 main.py -t ocr -i ./images/label_1.jpg')
+                return
             # if path does exist, query image for those with similar labels
             else:
                 print(f'Querying using image: {args.image}')
-                query_by_image(args.image)
+                query_start = time.time()
+                num_images = query_by_image(args.image)
+                query_end = time.time()
         else:
             print(f'Querying using text: {args.text}')
-            query_by_label(args.text)
+            query_start = time.time()
+            num_images = query_by_label(args.text)
+            query_end = time.time()
+        print(f"Finished querying. Number of images found: {num_images}.")
+        print(f"Average runtime over {num_images} images: "
+              f"{query_end - query_start/num_images:.5f} seconds")
 
     # user didn't specify whether running ocr, building db, or querying
     else:
         print("You must specify what OCR task you are performing (either 'ocr', 'build_db' or 'query')"
               " for e.g. try running: \n python3 main.py -t ocr -i ./images/label_1.jpg")
+        return
 
 
 if __name__ == '__main__':

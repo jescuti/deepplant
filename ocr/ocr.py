@@ -1,5 +1,4 @@
-from typing import Any, Literal
-import numpy as np
+from typing import Any
 import pytesseract
 import cv2
 from ocr_cleaning import extract_phrases_from_text

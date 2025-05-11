@@ -4,7 +4,7 @@ import json
 import time
 from ocr import run_clean_ocr
 
-def build_db(image_dir: str, db_filename: str) -> None:
+def build_db(image_dir: str, db_filename: str) -> int:
     """
     Build a text database as a dictionary and stream to a JSON file.
 
@@ -17,13 +17,11 @@ def build_db(image_dir: str, db_filename: str) -> None:
 
     Returns
     -------
-    None
+    int
+        The number of entries in the database
     """
     first_entry = True  # marker for json formatting
     num_images = len(os.listdir(image_dir))
-    
-    print(f"Writing to {db_filename}...")
-    logic_start = time.time()
 
     with open(db_filename, "w", encoding="utf-8", buffering=1) as f:
         f.write("{\n")
@@ -55,6 +53,4 @@ def build_db(image_dir: str, db_filename: str) -> None:
             )
         f.write("\n}\n")
 
-    logic_end = time.time()
-    print("Finished building text database. Average runtime per image out of " 
-        f"{num_images} images: {(logic_end - logic_start)/num_images:.5f}")
+    return num_images
