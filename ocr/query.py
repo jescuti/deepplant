@@ -8,7 +8,7 @@ from ocr import run_clean_ocr
 _BDR_CODES = re.compile(r'([0-9]{6})')
 DATABASE_FILENAME = "./databases/db_labels.json"
 OUTPUT_DIR = "./"
-ROOTDIR = "./"
+IMAGE_DIR = "./"
 
 """
 TOKENS DATABASE STRUCTURE EXAMPLE
@@ -37,7 +37,7 @@ def generate_pdf(list_of_paths: list[str], output_filename: str) -> None:
 
     for path in list_of_paths:
         if "/" not in path:
-            path = os.path.join(ROOTDIR, path)
+            path = os.path.join(IMAGE_DIR, path)
 
         code = re.search(_BDR_CODES, path).group(0) # type: ignore
         
