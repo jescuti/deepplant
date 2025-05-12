@@ -11,9 +11,19 @@ export default function SearchInitiation({ onSubmitComplete }) {
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
+  interface SearchResult {
+    image: string;
+    similarity?: number;
+    filepath: string;
+    websiteUrl: string;
+  }
+
   // fields if the text input option is selected
   const [inputTextMode, setInputTextMode] = useState(false);
   const [inputText, setInputText] = useState('');
+
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -46,6 +56,9 @@ export default function SearchInitiation({ onSubmitComplete }) {
   };
 
   const handleSubmit = async () => {
+    setSearchResults([]);
+    setError(null);
+    
     if (!variableSelection && !inputTextMode) {
       alert("Please select a label type!");
       return;
@@ -97,17 +110,29 @@ export default function SearchInitiation({ onSubmitComplete }) {
       } else if (inputTextMode && inputText.trim()) {
         // text search
         // needs diff backend endpoint
-        console.log("Text search not implemented in backend yet");
-        alert("Text search is not implemented yet");
         
-        // should look something like:
-        // const response = await fetch("http://localhost:5000/api/text-search", {
-        //   method: "POST",
-        //   headers: {
-        //     "Content-Type": "application/json"
-        //   },
-        //   body: JSON.stringify({ query: inputText.trim() })
-        // });
+        const response = await fetch("http://localhost:5000/api/search/text", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ query: inputText.trim() })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Text search failed');
+        }
+    
+        const data = await response.json();
+        // setSearchResults(data.results);
+
+        if (onSubmitComplete && typeof onSubmitComplete === "function") {
+          onSubmitComplete({
+            labelType: variableSelection,
+            textQuery: inputText.trim(),
+            results: data.results
+        }); }
       }
     } catch (error) {
       console.error("Submission error:", error);
