@@ -11,10 +11,9 @@ export default function SearchInitiation({ onSubmitComplete }) {
   const webcamRef = useRef(null);
   const [loading, setLoading] = useState(false);
 
-  // text input
+  // fields if the text input option is selected
   const [inputTextMode, setInputTextMode] = useState(false);
   const [inputText, setInputText] = useState('');
-
 
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
@@ -46,52 +45,76 @@ export default function SearchInitiation({ onSubmitComplete }) {
     setShowCamera(false);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!variableSelection && !inputTextMode) {
-      alert("Please select a label type");
+      alert("Please select a label type!");
       return;
     }
-    
+
     if (!image && !inputText.trim()) {
-      alert("Please upload, capture an image, or enter text.");
+      alert("Please upload an image, take a picture, or enter text");
       return;
     }
-    
-    if (!image && !inputText.trim()) {
-      alert("Please upload, capture an image, or enter text.");
-      return;
-    }
-    
-    const submission = {
-      labelType: variableSelection,
-      imageData: image ? image.substring(0, 100) + "..." : null,
-      textData: inputTextMode ? inputText.trim() : null
-    };
-    
+
     setLoading(true);
-    
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      console.log("Submitting:", {
-        labelType: variableSelection,
-        imageData: image ? image.substring(0, 100) + "..." : null,
-        textData: inputTextMode ? inputText.trim() : null
-      });      
-      
-      setLoading(false);
-      
-      // If onSubmitComplete callback is provided, call it
-      // This allows the parent component to handle navigation
-      if (onSubmitComplete && typeof onSubmitComplete === 'function') {
-        onSubmitComplete({
-          labelType: variableSelection,
-          imagePreview: image,
-          text: inputText.trim()
-        });        
-      } else {
-        alert("Image submitted successfully!");
+
+    try {
+      if (image) {
+        // connect to Flask backend
+        // convert base64 image to blob
+        const base64Response = await fetch(image);
+        const blob = await base64Response.blob();
+        
+        // create FormData object for file upload
+        const formData = new FormData();
+        formData.append('image', blob, 'image.jpg');
+
+        // num of results to fetch
+        formData.append('k', '100'); 
+        
+        const response = await fetch("http://localhost:5000/api/search", {
+          method: "POST",
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          console.log("Search results:", data);
+          
+          if (onSubmitComplete && typeof onSubmitComplete === "function") {
+            onSubmitComplete({
+              labelType: variableSelection,
+              imagePreview: image,
+              results: data.results
+            });
+          } else {
+            alert("Search successful!!");
+          }
+        } else {
+          alert(`Error: ${data.error || "Search failed"}`);
+        }
+      } else if (inputTextMode && inputText.trim()) {
+        // text search
+        // needs diff backend endpoint
+        console.log("Text search not implemented in backend yet");
+        alert("Text search is not implemented yet");
+        
+        // should look something like:
+        // const response = await fetch("http://localhost:5000/api/text-search", {
+        //   method: "POST",
+        //   headers: {
+        //     "Content-Type": "application/json"
+        //   },
+        //   body: JSON.stringify({ query: inputText.trim() })
+        // });
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Submission error:", error);
+      alert("There was a problem connecting to the server. Please try again.");
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -181,16 +204,6 @@ export default function SearchInitiation({ onSubmitComplete }) {
             />
           </div>
         )}
-        
-        {image && !showCamera && (
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className={`bg-[#6bc07d] hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-          >
-            {loading ? 'Submitting...' : 'Submit Image'}
-          </button>
-        )}
 
         {inputTextMode && (
           <div className="w-full max-w-md mt-4">
@@ -210,10 +223,9 @@ export default function SearchInitiation({ onSubmitComplete }) {
             disabled={loading}
             className={`bg-[#6bc07d] hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold text-lg transition-all ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
           >
-            {loading ? 'Submitting...' : 'Submit'}
+            {loading ? 'Searching...' : 'Search'}
           </button>
         )}
-
       </div>
     </div>
   );

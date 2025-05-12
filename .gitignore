@@ -1,7 +1,10 @@
 .DS_Store
 image_download/herbarium_images/*
 image_download/herbarium_images/
-/image_download
+image_download/webscraped_images/
+image_download/test_images/
+image_download/venv
 ocr/__pycache__
 preprocessing/sam_vit_h_4b8939.pth
 ocr/scrap.py
+/frontend/node_modules
