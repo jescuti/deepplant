@@ -4,6 +4,7 @@ image_download/herbarium_images/
 image_download/webscraped_images/
 image_download/test_images/
 image_download/venv
+server/segmented_images/
 ocr/__pycache__
 preprocessing/sam_vit_h_4b8939.pth
 ocr/scrap.py
