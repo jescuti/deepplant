@@ -1,7 +1,6 @@
 import os
 from tqdm import tqdm
 import json
-import time
 from ocr import run_clean_ocr
 
 def build_db(image_dir: str, db_filename: str) -> int:

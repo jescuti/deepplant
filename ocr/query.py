@@ -21,12 +21,22 @@ label_db = {
   ...
 }
 """
-
+class PDFWithFooter(FPDF):
+    def footer(self):
+        # Position at 1.5 cm from bottom
+        self.set_y(-15)
+        # Set font: Arial italic 8
+        self.set_font("Helvetica", "I", 8)
+        self.set_text_color(0, 0, 0)
+        # Page number
+        self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', 0, 0, 'C')
+        
 def generate_pdf(list_of_paths: list[str], output_filename: str) -> None:
     """
     Generates a PDF file that contains the cropped out labels and their corresponding image URLs.
     """
-    pdf = FPDF()
+    pdf = PDFWithFooter()
+    pdf.alias_nb_pages()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12, style="U")
     pdf.set_text_color(0, 0, 255)
