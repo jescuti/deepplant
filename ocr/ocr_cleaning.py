@@ -6,6 +6,11 @@ import spacy, spacy.tokens
 from wordfreq import zipf_frequency
 
 # -------------------- GLOBAL VARIABLES ---------------------
+'''
+NOTE: Install language models: 
+    python -m spacy download en_core_web_sm 
+    python -m spacy download fr_core_news_sm
+'''
 # Load spaCy’s small English model
 nlp = spacy.load("en_core_web_sm", disable=["parser","tagger","lemmatizer","attribute_ruler"])
 
@@ -20,7 +25,7 @@ _REPLACE_SANDWICHED_NON_ALNUMS, _CLEAN_NON_ALNUMS, \
 
 STOP_WORDS = set(stopwords.words("english")) | {"like"}
 KNOWN_NAMES = {"olneyanum", "flora", "planta", "plant", "james", "herbarium", \
-               "howells", "oregonenses", "texan"}
+               "howells", "oregonenses", "texan", "canadensis"}
 # COLL_YEAR = re.compile("^(1[6-9[]|20)[0-9]{2}$")
 
 

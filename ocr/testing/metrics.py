@@ -1,5 +1,8 @@
 from rapidfuzz import fuzz
+import matplotlib.pyplot as plt
+import json
 
+# ====================== OCR TEXT EXTRACTION ACCURACY ==========================
 def evaluate_ocr_accuracy(
     ocr_result_dict: dict[str, list[str]], 
     ground_truth_dict: dict[str, list[str]]
@@ -13,7 +16,7 @@ def evaluate_ocr_accuracy(
         total_score += similarity_score
     return total_score / len(ground_truth_dict)
 
-
+# ========================== SINGLE QUERY ACCURACY =============================
 def build_phrase_to_images_dict(image_to_phrases_dict):
     phrase_to_images = {}
 
@@ -49,6 +52,11 @@ def evaluate_single_query(gt_phrase_to_images, query, matched_paths):
 
 
 def save_query_metrics_to_txt(metrics, query_name, runtime=None, filename="query_eval.txt"):
+    """
+    Usage:
+    metrics = evaluate_single_query(gt_images, predicted_image_paths)
+    save_query_metrics_to_txt(metrics, query_name="stephen olney")
+    """
     with open(filename, "w") as f:
         f.write(f"Evaluation for Query: '{query_name}'\n")
         f.write(f"{'-'*40}\n")
@@ -61,15 +69,11 @@ def save_query_metrics_to_txt(metrics, query_name, runtime=None, filename="query
         if runtime is not None:
             f.write(f"Runtime         : {runtime:.4f} seconds\n")
 
-"""
-Usage:
-metrics = evaluate_single_query(gt_images, predicted_image_paths)
-save_query_metrics_to_txt(metrics, query_name="stephen olney")
-"""
-
-import matplotlib.pyplot as plt
 
 def plot_single_query_metrics(metrics, query_name="Query"):
+    """
+    plot_single_query_metrics(metrics, query_name="stephen olney")
+    """
     keys = ["precision", "recall", "accuracy"]
     values = [metrics[k] for k in keys]
 
@@ -81,6 +85,20 @@ def plot_single_query_metrics(metrics, query_name="Query"):
     plt.grid(True, axis='y')
     plt.show()
 
-"""
-plot_single_query_metrics(metrics, query_name="stephen olney")
-"""
+
+def main():
+    # Evaluate OCR accuracy (against ground truth text database)
+    with open("ocr_test_db_100.json", "rb") as f:
+        ocr_result_dict = json.load(f)
+    with open("gt_test_db.json", "rb") as f:
+        gt_result_dict = json.load(f)
+    accuracy = evaluate_ocr_accuracy(ocr_result_dict, gt_result_dict)
+    print(accuracy)  # 56.02
+
+    # Evaluate query accuracy
+    gt_phrase_to_images = build_phrase_to_images_dict(gt_result_dict)
+    evaluate_single_query(gt_phrase_to_images, "stephen olney", )
+
+
+if __name__ == "__main__":
+    main()
