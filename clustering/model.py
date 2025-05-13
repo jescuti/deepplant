@@ -11,6 +11,7 @@ import numpy as np
 
 # takes in a directory to the segmented labels
 # returns clustered dataset
+# RUN ON GPU
 def cluster_dataset(segmented_labels_dir):
    image_files = [os.path.join(segmented_labels_dir, f) for f in os.listdir(segmented_labels_dir) if f.endswith(('.jpg', '.jpeg', '.png'))]
    dataset = fo.Dataset.from_images(image_files, name='labels_test', overwrite=True)
@@ -25,6 +26,21 @@ def cluster_dataset(segmented_labels_dir):
         batch_size=10
     )
    dataset.set_values("clip_umap", res.current_points)
+   return dataset
+
+# load in a dataset from a file
+def load_clustered_model(model_dir):
+   name = "my-dataset"
+
+   # Create the dataset
+   dataset = fo.Dataset.from_dir(
+      dataset_dir=model_dir,
+      dataset_type=fo.types.FiftyOneDataset,
+      name=name,
+   )
+
+   print(dataset)
+
    return dataset
 
 # takes in a path to the search image and dataset, as well as k, the number of results to return
@@ -55,8 +71,6 @@ def query_image(image_path, dataset, k):
    for i in top_k_indices:
       sample = dataset[sample_ids[i]]
       img = Image.open(sample.filepath)
-      plt.imshow(img)
-      plt.show()
       top_similar_images.append(img)
       top_similarity_scores.append(similarity_scores[i])
 

@@ -1,145 +1,93 @@
 import { useState, useEffect } from "react";
 import { ExternalLink, ChevronLeft, X } from "lucide-react";
-import aloeVera from '../assets/397772_1.jpg';
-import peaceLily from '../assets/397772_14.jpg'; 
-import spiderPlant from '../assets/699845_14.jpg'; 
-import olney2 from '../assets/olney5.jpg';
-import olney3 from '../assets/olney2.jpg';
-import olney4 from '../assets/olney3.jpg';
-import olney5 from '../assets/olney4.jpg';
 
 export default function SearchResultsGallery({ searchData = {}, onBack }) {
-  // Mock data for search results
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Get label type from searchData
+  // get label type from searchData
   const labelType = searchData?.labelType || "unknown";
 
-  // Simulate loading results from API
   useEffect(() => {
-    // Mock delay to simulate API call
-    const timer = setTimeout(() => {
-      // Generate different results based on label type
-      if (labelType === "machine-label") {
-        setResults([
-          {
-            id: 1,
-            imageUrl: "/Users/ashleywoertz/Desktop/CSCI1430_Projects/deepplant/frontend/src/assets/397772_1.jpg",
-            title: "Monstera Deliciosa",
-            websiteUrl: "https://example.com/plants/monstera",
-            confidence: "98%",
-            description: "Popular tropical houseplant with large, split leaves"
-          },
-          {
-            id: 2,
-            imageUrl: "/api/placeholder/400/320",
-            title: "Fiddle Leaf Fig",
-            websiteUrl: "https://example.com/plants/fiddle-leaf",
-            confidence: "95%",
-            description: "Trendy indoor plant with violin-shaped leaves"
-          },
-          {
-            id: 3,
-            imageUrl: "/api/placeholder/400/320",
-            title: "Snake Plant",
-            websiteUrl: "https://example.com/plants/snake-plant",
-            confidence: "93%",
-            description: "Low-maintenance succulent with tall, stiff leaves"
-          },
-          {
-            id: 4,
-            imageUrl: "/api/placeholder/400/320",
-            title: "Pothos",
-            websiteUrl: "https://example.com/plants/pothos",
-            confidence: "91%",
-            description: "Popular trailing vine with heart-shaped leaves"
-          }
-        ]);
-      } else if (labelType === "handwriting") {
-        setResults([
-          {
-            id: 1,
-            imageUrl: aloeVera,
-            title: "Aloe Vera",
-            websiteUrl: "https://example.com/plants/aloe",
-            confidence: "94%",
-            description: ""
-          },
-          {
-            id: 2,
-            imageUrl: peaceLily,
-            title: "Peace Lily",
-            websiteUrl: "https://example.com/plants/peace-lily",
-            confidence: "90%",
-            description: ""
-          },
-          {
-            id: 3,
-            imageUrl: spiderPlant,
-            title: "Spider Plant",
-            websiteUrl: "https://example.com/plants/spider-plant",
-            confidence: "88%",
-            description: ""
-          }
-        ]);
-      } else {
-        // Default results
-        setResults([
-          {
-            id: 1,
-            imageUrl: olney2,
-            title: "Planispicata",
-            websiteUrl: "https://example.com/plants/zz-plant",
-            confidence: "89%",
-            description: ""
-          },
-          {
-            id: 2,
-            imageUrl: olney3,
-            title: "Calathea",
-            websiteUrl: "https://example.com/plants/calathea",
-            confidence: "87%",
-            description: ""
-          },
-          {
-            id: 3,
-            imageUrl: olney4,
-            title: "Carex",
-            websiteUrl: "https://example.com/plants/calathea",
-            confidence: "87%",
-            description: ""
-          },
-          {
-            id: 4,
-            imageUrl: olney5,
-            title: "Debilis",
-            websiteUrl: "https://example.com/plants/calathea",
-            confidence: "87%",
-            description: ""
-          }
-        ]);
-      }
+    // check for results from back end
+    if (searchData?.results) {
+      // change backend results so they fit the UI
+      const formattedResults = searchData.results.map((item, index) => ({
+        id: index + 1,
+        imageUrl: `data:image/jpeg;base64,${item.image}`,
+        title: item.filepath.split('/').pop().split('.')[0],
+        websiteUrl: item.websiteUrl,
+        confidence: `${(item.similarity * 100).toFixed(0)}%`,
+        similarityScore: item.similarity
+      }));      
+      
+      setResults(formattedResults);
       setLoading(false);
-    }, 1500);
+    } else if (searchData?.imagePreview) {
+      // image but no results = fetch them from the backend
+      fetchResultsFromBackend(searchData.imagePreview);
+    } else {
+      // no search yet
+      setLoading(false);
+    }
+  }, [searchData]);
 
-    return () => clearTimeout(timer);
-  }, [labelType]);
+  // fetch results from backend using the image
+  const fetchResultsFromBackend = async (imageData) => {
+    setLoading(true);
+    
+    try {
+      const base64Response = await fetch(imageData);
+      const blob = await base64Response.blob();
+      
+      const formData = new FormData();
+      formData.append('image', blob, 'image.jpg');
+      // num of results to fetch
+      formData.append('k', '100');
+      
+      const response = await fetch("http://localhost:5000/api/search", {
+        method: "POST",
+        body: formData,
+      });
 
-  // Function to open image detail modal
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      const formattedResults = data.results.map((item, index) => ({
+        id: index + 1,
+        imageUrl: `data:image/jpeg;base64,${item.image}`,
+        title: item.filepath.split('/').pop().split('.')[0],
+        websiteUrl: "https://repository.library.brown.edu/studio/collections/id_643/",
+        confidence: `${(item.similarity * 100).toFixed(0)}%`,
+        description: `Similar plant based on visual features`,
+        similarityScore: item.similarity
+      }));
+      
+      setResults(formattedResults);
+    } catch (error) {
+      console.error("Error fetching results:", error);
+      // empty results if errored
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openImageDetail = (image) => {
     setSelectedImage(image);
   };
 
-  // Function to close image detail modal
   const closeImageDetail = () => {
     setSelectedImage(null);
   };
 
   return (
     <div className="container mx-auto px-4 py-8">
-      {/* Header */}
+      {/* header */}
       <div className="flex justify-between items-center mb-8">
         <div className="flex items-center">
           <button 
@@ -149,14 +97,27 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
             <ChevronLeft size={20} />
             <span>Back to Search</span>
           </button>
-          <h1 className="text-2xl font-bold lexend-deca text-customPeriwinkle">Plant Matches</h1>
+          <h1 className="text-2xl font-bold lexend-deca text-customPeriwinkle">Similar Label Matches</h1>
         </div>
         <div className="text-sm text-gray-600 lexend-deca">
           Found {results.length} matches
         </div>
       </div>
 
-      {/* Loading state */}
+      {/* user's inputted image */}
+      {searchData?.imagePreview && (
+        <div className="mb-8">
+          <h2 className="text-lg font-medium mb-2 lexend-deca text-gray-700">Your Plant Image:</h2>
+          <div className="inline-block rounded-lg overflow-hidden border-2 border-customPeriwinkle">
+            <img 
+              src={searchData.imagePreview} 
+              alt="Your plant" 
+              className="w-full max-w-xs h-auto object-cover"
+            />
+          </div>
+        </div>
+      )}
+
       {loading && (
         <div className="flex flex-col items-center justify-center h-64">
           <div className="w-16 h-16 border-4 border-customPeriwinkle border-t-transparent rounded-full animate-spin"></div>
@@ -164,8 +125,8 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
         </div>
       )}
 
-      {/* Gallery grid */}
-      {!loading && (
+      {/* gallery grid */}
+      {!loading && results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {results.map((item) => (
             <div 
@@ -203,15 +164,28 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
         </div>
       )}
 
-      {/* No results state */}
-      {!loading && results.length === 0 && (
+      {/* no results state */}
+      {!loading && results.length === 0 && searchData?.imagePreview && (
         <div className="text-center py-12">
           <p className="text-xl text-gray-600 lexend-deca">No matching plants found.</p>
-          <p className="mt-2 text-gray-500">Try uploading a clearer image or selecting a different label type.</p>
+          <p className="mt-2 text-gray-500">Try uploading a clearer image or select a different label type.</p>
         </div>
       )}
 
-      {/* Image detail modal */}
+      {/* no search yet */}
+      {!loading && !searchData?.imagePreview && (
+        <div className="text-center py-12">
+          <p className="text-xl text-gray-600 lexend-deca">No search has been performed yet.</p>
+          <button
+            onClick={onBack}
+            className="mt-4 bg-customPeriwinkle hover:bg-blue-600 text-white px-6 py-2 rounded-lg lexend-deca"
+          >
+            Go to Search
+          </button>
+        </div>
+      )}
+
+      {/* image detail */}
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-4xl w-full max-h-full overflow-auto">
@@ -239,15 +213,24 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
                     <p className="text-lg font-bold text-[#6bc07d]">{selectedImage.confidence}</p>
                   </div>
                   <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-500">Similarity Score</h4>
+                    <div className="mt-1 bg-gray-200 rounded-full h-4">
+                      <div 
+                        className="bg-[#6bc07d] h-4 rounded-full" 
+                        style={{ width: `${selectedImage.similarityScore * 100}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                  <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                    <p className="text-gray-800">{selectedImage.description}</p>
+                    <p className="text-gray-800">This plant sample is from the Brown University Herbarium collection.</p>
                   </div>
                   <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-500">Care Tips</h4>
+                    <h4 className="text-sm font-medium text-gray-500">Plant Information</h4>
                     <ul className="list-disc pl-5 text-gray-700 mt-2">
-                      <li>Water: {selectedImage.id % 2 === 0 ? "Keep soil slightly moist" : "Allow to dry between waterings"}</li>
-                      <li>Light: {selectedImage.id % 3 === 0 ? "Bright indirect light" : "Medium to low light"}</li>
-                      <li>Humidity: {selectedImage.id % 2 === 0 ? "High" : "Average"}</li>
+                      <li>Family: Likely in same family as your sample</li>
+                      <li>Collection: Brown University Herbarium</li>
+                      <li>Visual Match: Based on image similarity</li>
                     </ul>
                   </div>
                   <a 
@@ -256,7 +239,7 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
                     rel="noopener noreferrer" 
                     className="inline-flex items-center px-4 py-2 bg-[#6bc07d] text-white rounded hover:bg-green-600 lexend-deca"
                   >
-                    <span>Learn More</span>
+                    <span>View in Brown Digital Repository</span>
                     <ExternalLink size={16} className="ml-2" />
                   </a>
                 </div>

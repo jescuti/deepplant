@@ -4,39 +4,29 @@ import "../styles/index.css";
 import "../output.css";
 import Footer from "./Footer";
 import PottedPlant from "../assets/PottedPlant.png";
-import {
-  SignedIn,
-  SignedOut,
-  SignInButton,
-  SignOutButton,
-  SignUpButton,
-  UserButton,
-  UserProfile,
-  useUser,
-} from "@clerk/clerk-react";
+import { SignedIn, SignedOut, SignInButton, SignOutButton, SignUpButton, UserButton, UserProfile } from "@clerk/clerk-react";
 import SearchInitiation from "./SearchInitiation";
 import SearchResultsGallery from "./SearchResultsGallery";
 import { useState } from "react";
 
-// Wrapper for SearchInitiation to handle navigation
 function SearchInitiationWithNavigation() {
   const navigate = useNavigate();
   const [searchData, setSearchData] = useState(null);
 
   const handleSearchSubmit = (data) => {
-    // Store search data in localStorage to persist between routes
+    // store search data in localStorage to persist between routes
     localStorage.setItem('searchData', JSON.stringify(data));
-    // Navigate to results page
+    // navigate to results page
     navigate('/search-results');
   };
 
   return <SearchInitiation onSubmitComplete={handleSearchSubmit} />;
 }
 
-// Wrapper for SearchResultsGallery to handle navigation
+// handle navigation
 function SearchResultsWithNavigation() {
   const navigate = useNavigate();
-  // Retrieve search data from localStorage
+  // get search data from localStorage
   const searchData = JSON.parse(localStorage.getItem('searchData') || '{}');
 
   const handleBackToSearch = () => {

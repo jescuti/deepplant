@@ -12,8 +12,8 @@ from pathlib import Path
 # make a Kaggle account, & then you can generate a key in settings
 ###################################################
 api_key = {
-    'username': "demile",
-    'key': "89014853ca82ee7aa484c8f5fde70757"
+    'username': "USER_NAME",
+    'key': "API_KEY"
 }
 
 kaggle_dir = Path.home() / '.kaggle'
