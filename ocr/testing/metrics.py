@@ -84,21 +84,4 @@ def plot_single_query_metrics(metrics, query_name="Query"):
     plt.title(f"Evaluation Metrics for '{query_name}'")
     plt.grid(True, axis='y')
     plt.show()
-
-
-def main():
-    # Evaluate OCR accuracy (against ground truth text database)
-    with open("ocr_test_db_100.json", "rb") as f:
-        ocr_result_dict = json.load(f)
-    with open("gt_test_db.json", "rb") as f:
-        gt_result_dict = json.load(f)
-    accuracy = evaluate_ocr_accuracy(ocr_result_dict, gt_result_dict)
-    print(accuracy)  # 56.02
-
-    # Evaluate query accuracy
-    gt_phrase_to_images = build_phrase_to_images_dict(gt_result_dict)
-    evaluate_single_query(gt_phrase_to_images, "stephen olney", )
-
-
-if __name__ == "__main__":
-    main()
+    
