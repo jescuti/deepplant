@@ -83,16 +83,17 @@ def main():
             else:
                 print(f'Querying using image: {args.image}')
                 query_start = time.time()
-                num_images = query_by_image(args.image)
+                matched_paths, similarity_scores = query_by_image(args.image)
                 query_end = time.time()
         else:
             print(f'Querying using text: {args.text}')
             query_start = time.time()
-            num_images = query_by_label(args.text)
+            matched_paths, similarity_scores = query_by_label(args.text)
             query_end = time.time()
+        num_images = len(matched_paths)
         print(f"Finished querying. Number of images found: {num_images}.")
         print(f"Average runtime over {num_images} images: "
-              f"{query_end - query_start/num_images:.5f} seconds")
+              f"{(query_end - query_start) / num_images:.5f} seconds")
 
     # user didn't specify whether running ocr, building db, or querying
     else:
