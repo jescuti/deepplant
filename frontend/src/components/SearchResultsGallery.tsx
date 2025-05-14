@@ -7,20 +7,32 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
   const [selectedImage, setSelectedImage] = useState(null);
 
   // get label type from searchData
-  const labelType = searchData?.labelType || "unknown";
+  // const labelType = searchData?.labelType || "unknown";
 
   useEffect(() => {
-    // check for results from back end
+    // check for results from back end  
     if (searchData?.results) {
       // change backend results so they fit the UI
-      const formattedResults = searchData.results.map((item, index) => ({
-        id: index + 1,
-        imageUrl: `data:image/jpeg;base64,${item.image}`,
-        title: item.filepath.split('/').pop().split('.')[0],
-        websiteUrl: item.websiteUrl,
-        confidence: `${(item.similarity * 100).toFixed(0)}%`,
-        similarityScore: item.similarity
-      }));      
+      const formattedResults = searchData.results.map((item, index) => {
+        const catalogNumber = item.metadata?.dwc_catalog_number_ssi || "Unknown";
+        const fullPlantName = item.metadata?.dwc_accepted_name_usage_ssi || item.filepath.split('/').pop().split('.')[0];
+        const yearCollected = item.metadata?.dwc_year_ssi || "Unknown";
+        const collectors = item.metadata?.dwc_recorded_by_ssi || "Unknown";
+        const imageUrl = `data:image/jpeg;base64,${item.image}`;
+
+        return {
+          id: index + 1,
+          imageUrl: imageUrl,
+          title: fullPlantName,
+          websiteUrl: item.websiteUrl || "https://repository.library.brown.edu/studio/collections/id_643/",
+          confidence: `${(item.similarity * 100).toFixed(0)}%`,
+          similarityScore: item.similarity,
+          catalogNumber: catalogNumber,
+          fullPlantName: fullPlantName,
+          yearCollected: yearCollected,
+          collectors: collectors
+        };
+      });     
       
       setResults(formattedResults);
       setLoading(false);
@@ -57,15 +69,26 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
 
       const data = await response.json();
       
-      const formattedResults = data.results.map((item, index) => ({
-        id: index + 1,
-        imageUrl: `data:image/jpeg;base64,${item.image}`,
-        title: item.filepath.split('/').pop().split('.')[0],
-        websiteUrl: "https://repository.library.brown.edu/studio/collections/id_643/",
-        confidence: `${(item.similarity * 100).toFixed(0)}%`,
-        description: `Similar plant based on visual features`,
-        similarityScore: item.similarity
-      }));
+      const formattedResults = data.results.map((item, index) => {
+        const catalogNumber = item.metadata?.dwc_catalog_number_ssi || "Unknown";
+        const fullPlantName = item.metadata?.dwc_accepted_name_usage_ssi || item.filepath.split('/').pop().split('.')[0];
+        const yearCollected = item.metadata?.dwc_year_ssi || "Unknown";
+        const collectors = item.metadata?.dwc_recorded_by_ssi || "Unknown";
+        
+        return {
+          id: index + 1,
+          imageUrl: `data:image/jpeg;base64,${item.image}`,
+          title: fullPlantName,
+          websiteUrl: "https://repository.library.brown.edu/studio/collections/id_643/",
+          confidence: `${(item.similarity * 100).toFixed(0)}%`,
+          description: `Similar plant based on visual features`,
+          similarityScore: item.similarity,
+          catalogNumber: catalogNumber,
+          fullPlantName: fullPlantName,
+          yearCollected: yearCollected,
+          collectors: collectors
+        };
+      });
       
       setResults(formattedResults);
     } catch (error) {
@@ -83,6 +106,11 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
 
   const closeImageDetail = () => {
     setSelectedImage(null);
+  };
+
+  const extractBdrId = (url) => {
+    const match = url.match(/bdr:([^/]+)/);
+    return match ? match[1] : null;
   };
 
   return (
@@ -145,10 +173,18 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
                 <div className="absolute top-2 right-2 bg-[#6bc07d] text-white text-xs px-2 py-1 rounded-full">
                   {item.confidence}
                 </div>
+                <div className="absolute bottom-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                  {item.catalogNumber}
+                </div>
               </div>
               <div className="p-4">
                 <h3 className="font-bold text-lg mb-2 lexend-deca text-customPeriwinkle">{item.title}</h3>
-                <p className="text-gray-600 text-sm mb-4">{item.description}</p>
+                <div className="text-gray-600 text-sm mb-4">
+                  <p><span className="font-medium">Catalog:</span> {item.catalogNumber}</p>
+                  {item.yearCollected !== "Unknown" && (
+                    <p><span className="font-medium">Year:</span> {item.yearCollected}</p>
+                  )}
+                </div>
                 <a 
                   href={item.websiteUrl}
                   target="_blank"
@@ -215,31 +251,31 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
                   <div className="mb-4">
                     <h4 className="text-sm font-medium text-gray-500">Similarity Score</h4>
                     <div className="mt-1 bg-gray-200 rounded-full h-4">
-                      <div 
+                    <div 
                         className="bg-[#6bc07d] h-4 rounded-full" 
-                        style={{ width: `${selectedImage.similarityScore * 100}%` }}
+                        style={{ width: `${(selectedImage.similarityScore * 100).toFixed(0)}%` }}
                       ></div>
                     </div>
                   </div>
                   <div className="mb-4">
-                    <h4 className="text-sm font-medium text-gray-500">Description</h4>
-                    <p className="text-gray-800">This plant sample is from the Brown University Herbarium collection.</p>
+                    <h4 className="text-sm font-medium text-gray-500">Catalog Number</h4>
+                    <p className="text-gray-700">{selectedImage.catalogNumber}</p>
                   </div>
-                  <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-500">Plant Information</h4>
-                    <ul className="list-disc pl-5 text-gray-700 mt-2">
-                      <li>Family: Likely in same family as your sample</li>
-                      <li>Collection: Brown University Herbarium</li>
-                      <li>Visual Match: Based on image similarity</li>
-                    </ul>
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-500">Year Collected</h4>
+                    <p className="text-gray-700">{selectedImage.yearCollected}</p>
+                  </div>
+                  <div className="mb-4">
+                    <h4 className="text-sm font-medium text-gray-500">Collectors</h4>
+                    <p className="text-gray-700">{selectedImage.collectors}</p>
                   </div>
                   <a 
                     href={selectedImage.websiteUrl}
                     target="_blank"
-                    rel="noopener noreferrer" 
-                    className="inline-flex items-center px-4 py-2 bg-[#6bc07d] text-white rounded hover:bg-green-600 lexend-deca"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-[#6bc07d] hover:text-green-700 font-medium lexend-deca"
                   >
-                    <span>View in Brown Digital Repository</span>
+                    View in Brown Digital Repository
                     <ExternalLink size={16} className="ml-2" />
                   </a>
                 </div>

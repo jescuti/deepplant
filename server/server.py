@@ -13,11 +13,74 @@ from PIL import Image
 import model  
 import tempfile
 import os
+import requests
+import urllib.parse
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"]}})
 
 clustered_dataset = model.load_clustered_model("../clustering/datasets")
+
+BDR_API_BASE = "https://repository.library.brown.edu/api/search/"
+
+def fetch_catalog_metadata(bdr_code):
+    """Fetch catalog metadata using the direct BDR API endpoint for the item"""
+    metadata = {"dwc_catalog_number_ssi": f"PBRU {bdr_code}"}
+    
+    try:
+        # API endpoint for the item
+        api_url = f"https://repository.library.brown.edu/api/items/bdr:{bdr_code}/"
+        response = requests.get(api_url)
+        
+        if response.status_code == 200:
+            data = response.json()
+            
+            if "dwc_catalog_number_ssi" in data:
+                metadata["dwc_catalog_number_ssi"] = data["dwc_catalog_number_ssi"]
+            
+            # scientific name
+            if "dwc_accepted_name_usage_ssi" in data:
+                metadata["dwc_accepted_name_usage_ssi"] = data["dwc_accepted_name_usage_ssi"]
+            elif "dwc_scientific_name_ssi" in data:
+                scientific_name = data["dwc_scientific_name_ssi"]
+                if "dwc_scientific_name_authorship_ssi" in data:
+                    scientific_name += " " + data["dwc_scientific_name_authorship_ssi"]
+                metadata["dwc_accepted_name_usage_ssi"] = scientific_name
+            
+            # get year
+            if "dwc_year_ssi" in data:
+                metadata["dwc_year_ssi"] = data["dwc_year_ssi"]
+            
+            # get collector info
+            if "dwc_recorded_by_ssi" in data:
+                metadata["dwc_recorded_by_ssi"] = data["dwc_recorded_by_ssi"]
+            
+            if data.get("iiif_resource_bsi", False):
+                metadata["iiif_url"] = f"https://repository.library.brown.edu/iiif/image/bdr:{bdr_code}/info.json"
+    
+    except Exception as e:
+        print(f"Error fetching metadata for BDR:{bdr_code} from API: {e}")
+
+    if "dwc_accepted_name_usage_ssi" not in metadata:
+        metadata["dwc_accepted_name_usage_ssi"] = f"Specimen {bdr_code}"
+        
+    return metadata
+
+def fetch_iiif_url(bdr_code):
+    """fetch IIIF image URL from item page"""
+    try:
+        item_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
+        response = requests.get(item_url)
+        
+        if response.status_code == 200:
+            # find IIIF URL in page content
+            match = re.search(r'"(https://repository\.library\.brown\.edu/iiif/image/bdr:[^/]+/info\.json)"', response.text)
+            if match:
+                return match.group(1)
+    except Exception as e:
+        print(f"Error fetching IIIF URL for BDR:{bdr_code}: {e}")
+    
+    return None
 
 @app.route("/api/search", methods = ["POST"])
 def search():
@@ -56,11 +119,23 @@ def search():
             bdr_code = code_match.group(1) if code_match else "000000"
             website_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
 
+            metadata = fetch_catalog_metadata(bdr_code)
+            if not metadata.get("dwc_catalog_number_ssi"):
+                metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
+
+            if not metadata.get("dwc_accepted_name_usage_ssi"):
+                name_parts = filename.split("_")
+                if len(name_parts) >= 2:
+                    metadata["dwc_accepted_name_usage_ssi"] = " ".join(name_parts[1:]).replace(".jpg", "").title()
+                else:
+                    metadata["dwc_accepted_name_usage_ssi"] = filename.replace(".jpg", "").title()
+
             results.append({
                 "image": img_str,
                 "similarity": float(sim_score),
                 "filepath": filepath,
-                "websiteUrl": website_url
+                "websiteUrl": website_url,
+                "metadata": metadata
             })
 
         os.remove(image_path)
@@ -102,7 +177,7 @@ def search_text():
                 
                 with Image.open(full_path) as img:
                     buffered = BytesIO()
-                    img.save(buffered, format="JPEG")
+                    img.save(buffered, format = "JPEG")
                     img_str = base64.b64encode(buffered.getvalue()).decode()
 
                 filename = os.path.basename(full_path)
@@ -110,10 +185,22 @@ def search_text():
                 bdr_code = bdr_match.group(1) if bdr_match else "000000"
                 website_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
 
+                metadata = fetch_catalog_metadata(bdr_code)
+                if not metadata.get("dwc_catalog_number_ssi"):
+                    metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
+                
+                if not metadata.get("dwc_accepted_name_usage_ssi"):
+                    name_parts = filename.split("_")
+                    if len(name_parts) >= 2:
+                        metadata["dwc_accepted_name_usage_ssi"] = " ".join(name_parts[1:]).replace(".jpg", "").title()
+                    else:
+                        metadata["dwc_accepted_name_usage_ssi"] = filename.replace(".jpg", "").title()
+
                 results.append({
                     "image": img_str,
                     "filepath": full_path,
-                    "websiteUrl": website_url
+                    "websiteUrl": website_url,
+                    "metadata" : metadata
                 })
 
             except Exception as img_err:
@@ -124,5 +211,6 @@ def search_text():
     except Exception as e:
         print("Text search error:", e)
         return jsonify({'error': str(e)}), 500
+    
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", port = 5000)
