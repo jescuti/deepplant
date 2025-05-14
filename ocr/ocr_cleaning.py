@@ -30,10 +30,10 @@ KNOWN_NAMES = {"olneyanum", "flora", "planta", "plant", "james", "herbarium", \
 
 
 # ------------------------- CLEANING -------------------------
-def is_common_english(token: str, threshold: float = 3.5) -> bool:
+def is_common_english(token: str, threshold: float = 3) -> bool:
     """
-    Check whether a word is "common." A log-scaled frequency of 3.5 is roughly
-    words occurring around once per million words.
+    Check whether a word is "common." A log-scaled frequency of 3 is roughly
+    words occurring around once per thousand words.
 
     Parameters
     ----------

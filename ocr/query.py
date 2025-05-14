@@ -1,11 +1,9 @@
 import json
 from rapidfuzz import fuzz
-import re
 import os
-from fpdf import FPDF
 from ocr import run_clean_ocr
+from generate_output import generate_pdf
 
-_BDR_CODES = re.compile(r'([0-9]{6})')
 DATABASE_FILENAME = "./past_db/db_labels.json"
 OUTPUT_DIR = "./"
 IMAGE_DIR = "../image_download/db_labels"
@@ -21,68 +19,6 @@ label_db = {
   ...
 }
 """
-class PDFWithFooter(FPDF):
-    def footer(self):
-        # Position at 1.5 cm from bottom
-        self.set_y(-15)
-        # Set font: Arial italic 8
-        self.set_font("Times", "I", 8)
-        self.set_text_color(0, 0, 0)
-        # Page number
-        self.cell(0, 10, f'Page {self.page_no()}/{{nb}}', 0, 0, 'C')
-        
-def generate_pdf(
-        matched_img_paths: list[str], 
-        similarity_scores: list[float],
-        output_filename: str
-    ) -> None:
-    """
-    Generates a PDF file that contains the cropped out labels and their corresponding image URLs.
-    """
-    pdf = PDFWithFooter()
-    pdf.alias_nb_pages()
-    pdf.add_page()
-    pdf.set_text_color(0, 0, 0)
-    pdf.set_auto_page_break(True, margin=10)
-
-    font = "Times"
-    image_height = 40
-    spacing_after_image = 10
-
-    # Info for first page
-    pdf.set_font(font, size=12, style="BU")
-    num_matches = f"Number of matches found: {len(matched_img_paths)}"
-    pdf.cell(200, 10, txt=num_matches, ln=1, align="L") # type: ignore
-
-    for path, score in zip(matched_img_paths, similarity_scores):
-        if "/" not in path:
-            path = os.path.join(IMAGE_DIR, path)
-
-        code = re.search(_BDR_CODES, path).group(0) # type: ignore
-        
-        # Check remaining space on page
-        current_y = pdf.get_y()
-        if current_y + image_height + spacing_after_image > pdf.h - pdf.b_margin:
-            pdf.add_page()
-
-        # Add similarity score
-        pdf.set_text_color(0, 0, 0)
-        pdf.set_font(font, style="")
-        pdf.cell(200, 5, txt=f"Match score: {score:.2f}", ln=1, align="L") # type: ignore
-        
-        # Add hyperlink text
-        link_url = f"https://repository.library.brown.edu/studio/item/bdr:{code}/"
-        pdf.set_text_color(0, 0, 255)
-        pdf.set_font(font, style="U")
-        pdf.cell(200, 5, txt=link_url, ln=1, align="L", link=link_url) # type: ignore
-        
-        # Add image
-        pdf.image(path, x=pdf.get_x(), y=pdf.get_y(), h=image_height)
-        pdf.ln(image_height + spacing_after_image)
-
-    pdf.output(output_filename)
-
-
 def search_text_phrase(
         query: str, 
         label_db: dict[str, list[str]], 
@@ -178,7 +114,7 @@ def query_by_label(text_label: str) -> tuple[list[str], list[float]]:
     query = text_label.replace(" ", "_")
     output_filename = os.path.join(OUTPUT_DIR, "output", f"{query}.pdf")
     print(f"Generating output PDF at {output_filename}...")
-    generate_pdf(matched_paths, similarity_scores, output_filename)
+    generate_pdf(matched_paths, similarity_scores, output_filename, IMAGE_DIR)
     
     return matched_paths, similarity_scores
     
@@ -209,6 +145,6 @@ def query_by_image(file_path: str) -> tuple[list[str], list[float]]:
     query, _ = os.path.splitext(os.path.basename(file_path))
     output_filename = os.path.join(OUTPUT_DIR, "output", f"{query}.pdf")
     print(f"Generating output PDF at {output_filename}...")
-    generate_pdf(matched_paths, similarity_scores, output_filename)
+    generate_pdf(matched_paths, similarity_scores, output_filename, IMAGE_DIR)
 
     return matched_paths, similarity_scores

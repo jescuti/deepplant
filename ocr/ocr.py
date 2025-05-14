@@ -1,6 +1,6 @@
-from typing import Any
 import pytesseract
 import cv2
+from typing import Any
 from ocr_cleaning import extract_phrases_from_text
 
 '''
