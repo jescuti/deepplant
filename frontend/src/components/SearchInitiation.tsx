@@ -59,10 +59,10 @@ export default function SearchInitiation({ onSubmitComplete }) {
     setSearchResults([]);
     setError(null);
     
-    if (!variableSelection && !inputTextMode) {
-      alert("Please select a label type!");
-      return;
-    }
+    // if (!variableSelection && !inputTextMode) {
+    //   alert("Please select a label type!");
+    //   return;
+    // }
 
     if (!image && !inputText.trim()) {
       alert("Please upload an image, take a picture, or enter text");
@@ -97,7 +97,7 @@ export default function SearchInitiation({ onSubmitComplete }) {
           
           if (onSubmitComplete && typeof onSubmitComplete === "function") {
             onSubmitComplete({
-              labelType: variableSelection,
+              // labelType: variableSelection,
               imagePreview: image,
               results: data.results
             });
@@ -129,7 +129,7 @@ export default function SearchInitiation({ onSubmitComplete }) {
 
         if (onSubmitComplete && typeof onSubmitComplete === "function") {
           onSubmitComplete({
-            labelType: variableSelection,
+            // labelType: variableSelection,
             textQuery: inputText.trim(),
             results: data.results
         }); }
@@ -145,7 +145,7 @@ export default function SearchInitiation({ onSubmitComplete }) {
   return (
     <div className="space-y-10">
       <div className="flex flex-col items-center justify-center mt-8 lg:mt-12 space-y-6">
-        <select
+        {/* <select
           className="px-4 py-2 m-0 h-auto leading-none text-base border border-black rounded max-w-full min-w-[150px] sm:min-w-[200px] sm:max-w-[400px] align-bottom"
           name="variable-dropdown"
           id="variable-dropdown"
@@ -158,7 +158,7 @@ export default function SearchInitiation({ onSubmitComplete }) {
           <option value="">Select Label Type</option>
           <option value="machine-label">Machine Printed Label</option>
           <option value="handwriting">Handwritten Label</option>
-        </select>
+        </select> */}
 
         {!showCamera && (
           <div className="flex flex-row space-x-4">
