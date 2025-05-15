@@ -96,10 +96,12 @@ export default function SearchInitiation({ onSubmitComplete }) {
           console.log("Search results:", data);
           
           if (onSubmitComplete && typeof onSubmitComplete === "function") {
+            console.log("submit complete", data.pdf); 
             onSubmitComplete({
               // labelType: variableSelection,
               imagePreview: image,
-              results: data.results
+              results: data.results,
+              pdf: data.pdf
             });
           } else {
             alert("Search successful!!");
@@ -131,7 +133,8 @@ export default function SearchInitiation({ onSubmitComplete }) {
           onSubmitComplete({
             // labelType: variableSelection,
             textQuery: inputText.trim(),
-            results: data.results
+            results: data.results,
+            pdf: data.pdf
         }); }
       }
     } catch (error) {

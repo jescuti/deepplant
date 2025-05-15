@@ -5,7 +5,7 @@ import model
 import query as querySearch
 import json
 import re
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, url_for
 from flask_cors import CORS
 from io import BytesIO
 import base64
@@ -14,12 +14,28 @@ import model
 import tempfile
 import os
 import requests
+import numpy as np
 import urllib.parse
+from flask import send_file
+import generate_output
+import uuid
+from flask_cors import cross_origin
+import base64
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*", "methods": ["GET", "POST", "OPTIONS"]}})
+CORS(app, 
+     resources={r"/*": {"origins": "*"}}, 
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Origin"],
+     methods=["GET", "POST", "OPTIONS", "HEAD", "DELETE"])
 
 clustered_dataset = model.load_clustered_model("../clustering/datasets")
+
+generated_pdfs = {}
+
+PDF_DIRECTORY = "generated_pdfs"
+if not os.path.exists(PDF_DIRECTORY):
+    os.makedirs(PDF_DIRECTORY)
 
 BDR_API_BASE = "https://repository.library.brown.edu/api/search/"
 
@@ -66,85 +82,17 @@ def fetch_catalog_metadata(bdr_code):
         
     return metadata
 
-def fetch_iiif_url(bdr_code):
-    """fetch IIIF image URL from item page"""
-    try:
-        item_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
-        response = requests.get(item_url)
-        
-        if response.status_code == 200:
-            # find IIIF URL in page content
-            match = re.search(r'"(https://repository\.library\.brown\.edu/iiif/image/bdr:[^/]+/info\.json)"', response.text)
-            if match:
-                return match.group(1)
-    except Exception as e:
-        print(f"Error fetching IIIF URL for BDR:{bdr_code}: {e}")
+def generate_and_save_pdf(matched_img_paths, similarity_scores, search_type, image_dir=""):
+    """Generate PDF and return the filename and URL"""
+    pdf_filename = f"search_results_{uuid.uuid4()}.pdf"
+    pdf_path = os.path.join(PDF_DIRECTORY, pdf_filename)
     
-    return None
+    generate_output.generate_pdf(matched_img_paths, similarity_scores, pdf_path, image_dir)
 
-@app.route("/api/search", methods = ["POST"])
-def search():
-    try:
-        # get uploaded image
-        if 'image' not in request.files:
-            return jsonify({'error': 'No image provided'}), 400
-        image_file = request.files['image']
-        k = int(request.form.get('k', 100))
-
-        # save img temporarily
-        with tempfile.NamedTemporaryFile(delete = False, suffix = ".jpg") as tmp:
-            image_path = tmp.name
-            image_file.save(image_path)
-
-        # query top k images
-        similar_images, similarity_scores = model.query_image(image_path, clustered_dataset, k)
-
-        # BDR_CODE_PATTERN = r"bdr[0-9]{6,}"
-
-        results = []
-        BDR_CODE_PATTERN = r"^(\d+)"
-
-        for sim_img, sim_score, sample in zip(similar_images, similarity_scores, clustered_dataset):
-            # convert img
-            buffered = BytesIO()
-            sim_img.save(buffered, format = "JPEG")
-            img_str = base64.b64encode(buffered.getvalue()).decode()
-
-            # get filepath
-            filepath = sample.filepath if hasattr(sample, "filepath") else "/unknown.jpg"
-            filename = os.path.basename(filepath)
-            
-            # extract bdr code
-            code_match = re.search(BDR_CODE_PATTERN, filename)
-            bdr_code = code_match.group(1) if code_match else "000000"
-            website_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
-
-            metadata = fetch_catalog_metadata(bdr_code)
-            if not metadata.get("dwc_catalog_number_ssi"):
-                metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
-
-            if not metadata.get("dwc_accepted_name_usage_ssi"):
-                name_parts = filename.split("_")
-                if len(name_parts) >= 2:
-                    metadata["dwc_accepted_name_usage_ssi"] = " ".join(name_parts[1:]).replace(".jpg", "").title()
-                else:
-                    metadata["dwc_accepted_name_usage_ssi"] = filename.replace(".jpg", "").title()
-
-            results.append({
-                "image": img_str,
-                "similarity": float(sim_score),
-                "filepath": filepath,
-                "websiteUrl": website_url,
-                "metadata": metadata
-            })
-
-        os.remove(image_path)
-
-        return jsonify({"results": results})
-
-    except Exception as e:
-        print("Error:", e)
-        return jsonify({"error": str(e)}), 500
+    with open(pdf_path, "rb") as pdf_file:
+        encoded_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
+    
+    return pdf_path, encoded_pdf
     
 @app.route("/api/search/text", methods=["POST", "OPTIONS"])
 def search_text():
@@ -163,13 +111,20 @@ def search_text():
             label_db = json.load(f)
 
         # search text
-        matched_paths = querySearch.search_text_phrase(query, label_db)
+        matched_paths, similarity_scores = querySearch.search_text_phrase(query, label_db)
 
         results = []
         image_directory = "segmented_images/"
-        for path in matched_paths:
+        
+        # full paths for PDF gen
+        full_matched_paths = []
+        normalized_similarity_scores = []
+        
+        for path, score in zip(matched_paths, similarity_scores):
             try:
                 full_path = os.path.join(image_directory, path)
+                full_matched_paths.append(full_path)
+                normalized_similarity_scores.append(score / 100)
                 
                 if not os.path.exists(full_path):
                     print(f"File not found: {full_path}")
@@ -200,17 +155,109 @@ def search_text():
                     "image": img_str,
                     "filepath": full_path,
                     "websiteUrl": website_url,
-                    "metadata" : metadata
+                    "similarity": score / 100,
+                    "metadata": metadata
                 })
 
             except Exception as img_err:
                 print(f"Error processing {full_path}: {img_err}")
 
-        return jsonify({"results": results})
+
+        pdf_path, pdf_base64 = generate_and_save_pdf(
+            full_matched_paths,
+            normalized_similarity_scores,
+            "text",
+            image_directory
+        )
+
+        return jsonify({
+            "results": results,
+            "pdf" : pdf_base64
+        })
 
     except Exception as e:
         print("Text search error:", e)
         return jsonify({'error': str(e)}), 500
+    
+@app.route("/api/search", methods = ["POST"])
+def search():
+    try:
+        # get uploaded image
+        if 'image' not in request.files:
+            return jsonify({'error': 'No image provided'}), 400
+        image_file = request.files['image']
+        k = int(request.form.get('k', 100))
+
+        # save img temporarily
+        with tempfile.NamedTemporaryFile(delete = False, suffix = ".jpg") as tmp:
+            image_path = tmp.name
+            image_file.save(image_path)
+
+        # query top k images
+        similar_images, similarity_scores = model.query_image(image_path, clustered_dataset, k)
+
+        results = []
+        sample_ids = clustered_dataset.values("id")
+        sorted_indices = np.argsort(similarity_scores)[::-1][:k]
+
+        top_samples = [clustered_dataset[sample_ids[i]] for i in sorted_indices]
+        top_scores = similarity_scores[sorted_indices]
+        
+        # filepaths for PDF generation
+        matched_img_paths = []
+
+        for i, (sample, sim_score) in enumerate(zip(top_samples, top_scores)):
+            filepath = sample.filepath if hasattr(sample, "filepath") else "/unknown.jpg"
+            filename = os.path.basename(filepath)
+            matched_img_paths.append(filepath)
+
+            # convert img
+            buffered = BytesIO()
+            similar_images[i].save(buffered, format = "JPEG")
+            img_str = base64.b64encode(buffered.getvalue()).decode()
+            
+            # extract bdr code
+            code_match = re.search(r"(\d+)", filename)
+            bdr_code = code_match.group(1) if code_match else "000000"
+            website_url = f"https://repository.library.brown.edu/studio/item/bdr:{bdr_code}/"
+
+            metadata = fetch_catalog_metadata(bdr_code)
+            if not metadata.get("dwc_catalog_number_ssi"):
+                metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
+
+            if not metadata.get("dwc_accepted_name_usage_ssi"):
+                name_parts = filename.split("_")
+                if len(name_parts) >= 2:
+                    metadata["dwc_accepted_name_usage_ssi"] = " ".join(name_parts[1:]).replace(".jpg", "").title()
+                else:
+                    metadata["dwc_accepted_name_usage_ssi"] = filename.replace(".jpg", "").title()
+
+            results.append({
+                "image": img_str,
+                "similarity": float(sim_score),
+                "filepath": filepath,
+                "websiteUrl": website_url,
+                "metadata": metadata,
+            })
+
+        os.remove(image_path)
+
+        pdf_filename, pdf = generate_and_save_pdf(
+            matched_img_paths,
+            [float(score) for score in top_scores], 
+            "image"
+        )
+
+        # print(pdf); 
+
+        return jsonify({
+            "results": results,
+            "pdf": pdf,
+        })
+
+    except Exception as e:
+        print("Error:", e)
+        return jsonify({"error": str(e)}), 500
     
 if __name__ == "__main__":
     app.run(host = "0.0.0.0", port = 5000)

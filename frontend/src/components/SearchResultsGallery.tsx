@@ -1,17 +1,18 @@
 import { useState, useEffect } from "react";
-import { ExternalLink, ChevronLeft, X } from "lucide-react";
+import { ExternalLink, ChevronLeft, X, Download } from "lucide-react";
+import axios from 'axios';
 
 export default function SearchResultsGallery({ searchData = {}, onBack }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(null);
-
-  // get label type from searchData
-  // const labelType = searchData?.labelType || "unknown";
+  const [pdfUrl, setPdfUrl] = useState(null);
+  const [downloadLoading, setDownloadLoading] = useState(false);
 
   useEffect(() => {
     // check for results from back end  
     if (searchData?.results) {
+      console.log("1000"); 
       // change backend results so they fit the UI
       const formattedResults = searchData.results.map((item, index) => {
         const catalogNumber = item.metadata?.dwc_catalog_number_ssi || "Unknown";
@@ -32,10 +33,29 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
           yearCollected: yearCollected,
           collectors: collectors
         };
-      });     
+      });
+      console.log("here"); 
+      console.log(searchData); 
+
+      // const test = searchData.pdf.map((item, index) => {
+      //   const pdf = item.metadata?.pdf;
+      
+      //   console.log("pdf", pdf); // use console.log instead of print in JavaScript
+      
+      //   return {
+      //     pdf: pdf,
+      //   };
+      // });
       
       setResults(formattedResults);
       setLoading(false);
+
+      // console.log(searchData?.pdf); 
+      // console.log(searchData.results); 
+
+      if (searchData?.pdf) {
+        setPdfUrl(searchData.pdf);
+      }
     } else if (searchData?.imagePreview) {
       // image but no results = fetch them from the backend
       fetchResultsFromBackend(searchData.imagePreview);
@@ -50,8 +70,21 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
     setLoading(true);
     
     try {
-      const base64Response = await fetch(imageData);
-      const blob = await base64Response.blob();
+      const base64ToBlob = (base64Data, contentType = 'image/jpeg') => {
+        const byteCharacters = atob(base64Data.split(',')[1] || base64Data);
+        const byteArrays = [];
+      
+        for (let i = 0; i < byteCharacters.length; i += 512) {
+          const slice = byteCharacters.slice(i, i + 512);
+          const byteNumbers = new Array(slice.length).fill().map((_, j) => slice.charCodeAt(j));
+          byteArrays.push(new Uint8Array(byteNumbers));
+        }
+      
+        return new Blob(byteArrays, { type: contentType });
+      };
+      
+      
+      const blob = base64ToBlob(imageData);
       
       const formData = new FormData();
       formData.append('image', blob, 'image.jpg');
@@ -68,6 +101,11 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
       }
 
       const data = await response.json();
+
+      console.log("Full response data:", data);
+
+
+      console.log("pdf data", data.pdf); 
       
       const formattedResults = data.results.map((item, index) => {
         const catalogNumber = item.metadata?.dwc_catalog_number_ssi || "Unknown";
@@ -81,7 +119,6 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
           title: fullPlantName,
           websiteUrl: "https://repository.library.brown.edu/studio/collections/id_643/",
           confidence: `${(item.similarity * 100).toFixed(0)}%`,
-          description: `Similar plant based on visual features`,
           similarityScore: item.similarity,
           catalogNumber: catalogNumber,
           fullPlantName: fullPlantName,
@@ -91,6 +128,14 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
       });
       
       setResults(formattedResults);
+
+      console.log("SearchResultsGallery received searchData:", searchData);
+
+      if (data.pdf) {
+        setPdfUrl(data.pdf);
+        console.log("data pdf ", data.pdf)
+        // setPdfFilename(data.pdf_filename?.split('/').pop())
+      }
     } catch (error) {
       console.error("Error fetching results:", error);
       // empty results if errored
@@ -100,23 +145,36 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
     }
   };
 
-  const openImageDetail = (image) => {
-    setSelectedImage(image);
-  };
+  const downloadPdf = async (base64Data, filename) => {
+    if (!base64Data) {
+      console.error("No PDF data available");
+      return;
+    }
 
-  const closeImageDetail = () => {
-    setSelectedImage(null);
-  };
+    console.log("base 64 data", base64Data); 
+  
+    setDownloadLoading(true);
+    try {
+      const link = document.createElement('a');
+      link.href = `data:application/pdf;base64,${base64Data}`;
+      console.log("Download link href:", link.href);
+      link.setAttribute('download', filename || "results.pdf");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
-  const extractBdrId = (url) => {
-    const match = url.match(/bdr:([^/]+)/);
-    return match ? match[1] : null;
+      console.log("link", link); 
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+    } finally {
+      setDownloadLoading(false);
+    }
   };
-
+  
   return (
     <div className="container mx-auto px-4 py-8">
       {/* header */}
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div className="flex items-center">
           <button 
             onClick={onBack}
@@ -127,15 +185,38 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
           </button>
           <h1 className="text-2xl font-bold lexend-deca text-customPeriwinkle">Similar Label Matches</h1>
         </div>
-        <div className="text-sm text-gray-600 lexend-deca">
-          Found {results.length} matches
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-600 lexend-deca">
+            Found {results.length} matches
+          </div>
+          {/* {results.length > 0 && ( */}
+            <button
+            onClick={() => {console.log("button clicked"); downloadPdf(pdfUrl, "results.pdf")}}
+            // disabled={downloadLoading || !pdfUrl}
+            className={`flex items-center px-4 py-2 bg-customPeriwinkle text-white rounded-lg hover:bg-blue-700 transition-colors lexend-deca ${
+              downloadLoading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {downloadLoading ? (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                Downloading...
+              </>
+            ) : (
+              <>
+                <Download size={16} className="mr-2" />
+                Download PDF
+              </>
+            )}
+          </button>         
+          {/* )} */}
         </div>
       </div>
 
       {/* user's inputted image */}
       {searchData?.imagePreview && (
         <div className="mb-8">
-          <h2 className="text-lg font-medium mb-2 lexend-deca text-gray-700">Your Plant Image:</h2>
+          <h2 className="text-lg font-medium mb-2 lexend-deca text-gray-700">Uploaded Image:</h2>
           <div className="inline-block rounded-lg overflow-hidden border-2 border-customPeriwinkle">
             <img 
               src={searchData.imagePreview} 
@@ -157,14 +238,14 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
       {!loading && results.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {results.map((item) => (
-            <div 
-              key={item.id} 
-              className="bg-white rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105"
+            <a 
+            key={item.id}
+            href={item.websiteUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block bg-white rounded-lg overflow-hidden shadow-lg transition-transform hover:scale-105"
             >
-              <div 
-                className="relative cursor-pointer"
-                onClick={() => openImageDetail(item)}
-              >
+            <div className="relative">
                 <img 
                   src={item.imageUrl} 
                   alt={item.title} 
@@ -184,18 +265,19 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
                   {item.yearCollected !== "Unknown" && (
                     <p><span className="font-medium">Year:</span> {item.yearCollected}</p>
                   )}
+                  <p><span className="font-medium">Collector:</span> {item.collectors}</p>
                 </div>
-                <a 
-                  href={item.websiteUrl}
-                  target="_blank"
-                  rel="noopener noreferrer" 
+                <span 
+                  // href={item.websiteUrl}
+                  // target="_blank"
+                  // rel="noopener noreferrer" 
                   className="flex items-center text-[#6bc07d] hover:text-green-700 font-medium lexend-deca"
                 >
                   <span>Brown Digital Repository</span>
                   <ExternalLink size={16} className="ml-1" />
-                </a>
+                </span>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       )}

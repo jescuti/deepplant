@@ -146,4 +146,3 @@ def generate_pdf(
 
     pdf.output(output_path)
 
-
