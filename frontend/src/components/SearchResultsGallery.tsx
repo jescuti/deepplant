@@ -291,7 +291,7 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
       )}
 
       {/* no search yet */}
-      {!loading && !searchData?.imagePreview && (
+      {/* {!loading && !searchData?.imagePreview && (
         <div className="text-center py-12">
           <p className="text-xl text-gray-600 lexend-deca">No search has been performed yet.</p>
           <button
@@ -301,7 +301,7 @@ export default function SearchResultsGallery({ searchData = {}, onBack }) {
             Go to Search
           </button>
         </div>
-      )}
+      )} */}
 
       {/* image detail */}
       {selectedImage && (
