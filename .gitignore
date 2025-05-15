@@ -11,3 +11,4 @@ ocr/scrap.py
 preprocessing/sam_vit_h_4b8939.pth
 /frontend/node_modules
 /clustering/datasets/*
+/frontend/.env
