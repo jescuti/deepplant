@@ -18,6 +18,8 @@ In another terminal:
 [1] `cd server`
 [2] `python server.py`
 
+*You will have to download the segmented images attached below from Google Drive and upload them into the server folder before running. 
+
 ## Data
 After scraping data by calling the API for the Brown Digital Repository, we successfully downloaded over 6,000 images totaling nearly 9.5GB. Due to GitHub's size constraints, these images couldn't be uploaded directly to the repository. However, they have been made available for download on Google Drive: 
 
