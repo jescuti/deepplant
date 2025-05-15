@@ -7,17 +7,37 @@ Our project's main goal is to assist the Brown Herbarium in reading and transcri
 2. For hand-written labels: Match a segment of a label, typically a signature, with images with similar handwriting or containing that signature
 
 ## Running the Project
+In one terminal:
 [1] `cd frontend`
 [2] `npm install`
 [3] `npm start`
 
-## Data
-After scraping data or calling the API for the Brown Digital Repository, we successfully downloaded 5,770 images totaling nearly 9.5GB. Due to GitHub's size constraints, these images couldn't be uploaded directly to the repository. However, they have been made available for download on Kaggle. You can access the dataset here: https://www.kaggle.com/datasets/ashleywoertz2/deep-plant
+In another terminal:
+[1] `cd server`
+[2] `python server.py`
 
-### Data Organization
-The dataset is organized as follows:
-- The main folder is named `herbarium_images`
-- Inside this folder, there are 719 subfolders, each named after the specimen collector's name
-- Within each collector's subfolder, you will find the specimens that the collector has made, saved as JPG images
-- The Brown Digital Repository has over 72,000 images, this is only a subsample of those!
+## Data
+After scraping data by calling the API for the Brown Digital Repository, we successfully downloaded over 6,000 images totaling nearly 9.5GB. Due to GitHub's size constraints, these images couldn't be uploaded directly to the repository. However, they have been made available for download on Google Drive: 
+
+[1] [**Segmented Images**](https://drive.google.com/drive/folders/1hV1xIqXvEzKdtaawIy-H4K-9SbmWZwoy?usp=drive_link)
+
+[2] [**Herbarium Plant Specimen Images**](https://drive.google.com/drive/folders/1AemR3uG3RSOLiDwFROlHL0qzPpQfJSvL?usp=drive_link)
+
+## Architecture Overview
+<img width="585" alt="image" src="https://github.com/user-attachments/assets/a1f2ceb2-dd66-4e83-986b-5ae57d37c49c" />
+
+**Pipeline Steps**
+
+[1] Images were webscraped using the `webscraping/download_all_images`
+
+[2] Images were preprocessed & segmented using `preprocessing/segmentation.ipynb`
+
+[3] Text-inputs are processed using `ocr/query.py` and the OCR database was created using `ocr/build_db.py`
+
+[4] Image-inputs are processed by comparing against clusters which are found in `clustering/model.py`
+
+[5] Front-End was developed which can be found in `frontend/src`
+
+[6] The front and back end were connected with a Flask server found in `server/server.py`
+
 
