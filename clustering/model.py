@@ -3,7 +3,7 @@ import fiftyone.brain as fob
 from fiftyone import ViewField as F
 import os
 from PIL import Image
-import clip
+import clip # pip install git+https://github.com/openai/CLIP.git
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 import matplotlib.pyplot as plt
