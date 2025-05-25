@@ -6,9 +6,12 @@ image_download/test_images/
 image_download/venv
 image_download/
 server/segmented_images/
+server/generated_pdfs
 ocr/__pycache__
 ocr/scrap.py
+ocr/images
 preprocessing/sam_vit_h_4b8939.pth
 /frontend/node_modules
-/clustering/datasets/*
 /frontend/.env
+/clustering/datasets/*
+

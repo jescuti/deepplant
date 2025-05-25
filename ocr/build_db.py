@@ -47,7 +47,7 @@ def build_db(image_dir: str, db_filename: str) -> int:
             else:
                 f.write(",\n")
             f.write(
-                f"  {json.dumps(file_path)}: "
+                f"  {json.dumps(file)}: "
                 f"{json.dumps(phrases, ensure_ascii=False)}"
             )
         f.write("\n}\n")
