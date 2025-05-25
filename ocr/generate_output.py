@@ -146,3 +146,30 @@ def generate_pdf(
 
     pdf.output(output_path)
 
+
+def generate_text_file(
+    similarity_scores: list[float],
+    all_metadata: list[dict],
+    output_path: str,
+):
+    """
+    Generates a text file that have PBRU number + similarity score 
+        for all the matches, one per line.
+    
+    Parameters
+    ----------
+    similarity_scores : list[float]
+        List of match scores corresponding to each image path
+    all_metadata : list[dict]
+        List of all metadata corresponding to each image path
+    pdf_path : str
+        Path of output pdf file
+
+    return metadata
+    Returns
+    -------
+    None. A text file is generated at the output_path.
+    """
+    with open(output_path, "w") as f:
+        for score, metadata in zip(similarity_scores, all_metadata):
+            f.write(f"{metadata['dwc_catalog_number_ssi']} {score}\n")
