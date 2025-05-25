@@ -1,35 +1,55 @@
 from fpdf import FPDF
 import os
 import re
+import requests
 
 _BDR_CODES = re.compile(r'([0-9]{6})')
 
 
-def generate_text_file(
-    similarity_scores: list[float],
-    all_metadata: list[dict],
-    output_path: str,
-):
-    """
-    Generates a text file that have PBRU number + similarity score 
-        for all the matches, one per line.
-    
-    Parameters
-    ----------
-    similarity_scores : list[float]
-        List of match scores corresponding to each image path
-    all_metadata : list[dict]
-        List of all metadata corresponding to each image path
-    pdf_path : str
-        Path of output pdf file
+def fetch_catalog_metadata(bdr_code):
+    """Fetch catalog metadata using the direct BDR API endpoint for the item."""
+    metadata = {"dwc_catalog_number_ssi": f"PBRU {bdr_code}"}
 
-    Returns
-    -------
-    None. A text file is generated at the output_path.
-    """
-    with open(output_path, "w") as f:
-        for score, metadata in zip(similarity_scores, all_metadata):
-            f.write(f"{metadata['dwc_catalog_number_ssi']} {score}\n")
+    try:
+        # API endpoint for the item
+        api_url = f"https://repository.library.brown.edu/api/items/bdr:{bdr_code}/"
+        response = requests.get(api_url)
+
+        if response.status_code == 200:
+            data = response.json()
+
+            # Catalog number
+            if "dwc_catalog_number_ssi" in data:
+                metadata["dwc_catalog_number_ssi"] = data["dwc_catalog_number_ssi"]
+
+            # Scientific name
+            if "dwc_accepted_name_usage_ssi" in data:
+                metadata["dwc_accepted_name_usage_ssi"] = data["dwc_accepted_name_usage_ssi"]
+            elif "dwc_scientific_name_ssi" in data:
+                scientific_name = data["dwc_scientific_name_ssi"]
+                if "dwc_scientific_name_authorship_ssi" in data:
+                    scientific_name += f" {data['dwc_scientific_name_authorship_ssi']}"
+                metadata["dwc_accepted_name_usage_ssi"] = scientific_name
+
+            # Year
+            if "dwc_year_ssi" in data:
+                metadata["dwc_year_ssi"] = data["dwc_year_ssi"]
+
+            # Collector info
+            if "dwc_recorded_by_ssi" in data:
+                metadata["dwc_recorded_by_ssi"] = data["dwc_recorded_by_ssi"]
+
+            # IIIF image URL
+            if data.get("iiif_resource_bsi", False):
+                metadata["iiif_url"] = f"https://repository.library.brown.edu/iiif/image/bdr:{bdr_code}/info.json"
+
+    except Exception as e:
+        print(f"Error fetching metadata for BDR:{bdr_code} from API: {e}")
+
+    if "dwc_accepted_name_usage_ssi" not in metadata:
+        metadata["dwc_accepted_name_usage_ssi"] = f"Specimen {bdr_code}"
+
+    return metadata
 
 
 class PDFWithFooter(FPDF):
@@ -48,8 +68,7 @@ class PDFWithFooter(FPDF):
 def generate_pdf(
         matched_img_paths: list[str], 
         similarity_scores: list[float],
-        all_metadata: list[dict],
-        pdf_path: str,
+        output_path: str,
         image_dir: str
     ) -> None:
     """
@@ -62,16 +81,14 @@ def generate_pdf(
         List of paths to matched labels
     similarity_scores : list[float]
         List of match scores corresponding to each image path
-    all_metadata : list[dict]
-        List of all metadata corresponding to each image path
-    pdf_path : str
+    output_path : str
         Path of output pdf file
     image_dir : str
         Directory of segmented labels 
 
     Returns 
     -------
-    None. A PDF file is generated at the pdf_path.
+    None. A PDF file is generated at the output_path.
     """
     pdf = PDFWithFooter()
     pdf.alias_nb_pages()
@@ -88,7 +105,7 @@ def generate_pdf(
     num_matches = f"Number of matches found: {len(matched_img_paths)}"
     pdf.cell(200, 10, txt=num_matches, ln=1, align="L") # type: ignore
 
-    for path, score, metadata in zip(matched_img_paths, similarity_scores, all_metadata):
+    for path, score in zip(matched_img_paths, similarity_scores):
         if "/" not in path:
             path = os.path.join(image_dir, path)
 
@@ -99,12 +116,14 @@ def generate_pdf(
         if current_y + image_height + spacing_after_image > pdf.h - pdf.b_margin:
             pdf.add_page()
 
-        # Add metadata
-        catalog_num = metadata["dwc_catalog_number_ssi"]
-        plant_name = metadata["dwc_accepted_name_usage_ssi"]
-        year = metadata["dwc_year_ssi"]
-        collectors = metadata["dwc_recorded_by_ssi"]
+        # Fetch and add metadata
+        metadata = fetch_catalog_metadata(code)
+        catalog_num = metadata.get("dwc_catalog_number_ssi") or "N/A"
+        plant_name = metadata.get("dwc_accepted_name_usage_ssi") or "N/A"
+        year = metadata.get("dwc_year_ssi") or "N/A"
+        collectors = metadata.get("dwc_recorded_by_ssi") or "N/A"
 
+        
         pdf.set_text_color(0, 0, 0)
         pdf.set_font(font, style="")
         pdf.cell(200, 5, txt=f"Catalog number: {catalog_num}", ln=1, align="L") # type: ignore
@@ -125,5 +144,5 @@ def generate_pdf(
         pdf.image(path, x=pdf.get_x(), y=pdf.get_y() + 2, h=image_height)
         pdf.ln(image_height + spacing_after_image)
 
-    pdf.output(pdf_path)
+    pdf.output(output_path)
 

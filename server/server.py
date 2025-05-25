@@ -82,12 +82,12 @@ def fetch_catalog_metadata(bdr_code):
         
     return metadata
 
-def generate_and_save_pdf(matched_img_paths, similarity_scores, all_metadata, search_type, image_dir=""):
+def generate_and_save_pdf(matched_img_paths, similarity_scores, search_type, image_dir=""):
     """Generate PDF and return the filename and URL"""
     pdf_filename = f"search_results_{uuid.uuid4()}.pdf"
     pdf_path = os.path.join(PDF_DIRECTORY, pdf_filename)
     
-    generate_output.generate_pdf(matched_img_paths, similarity_scores, all_metadata, pdf_path, image_dir)
+    generate_output.generate_pdf(matched_img_paths, similarity_scores, pdf_path, image_dir)
 
     with open(pdf_path, "rb") as pdf_file:
         encoded_pdf = base64.b64encode(pdf_file.read()).decode('utf-8')
@@ -142,7 +142,7 @@ def search_text():
 
                 metadata = fetch_catalog_metadata(bdr_code)
                 if not metadata.get("dwc_catalog_number_ssi"):
-                    metadata["dwc_catalog_number_ssi"] = f"PBRU{bdr_code}"
+                    metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
                 
                 if not metadata.get("dwc_accepted_name_usage_ssi"):
                     name_parts = filename.split("_")
@@ -167,7 +167,6 @@ def search_text():
             full_matched_paths,
             normalized_similarity_scores,
             "text",
-            results,
             image_directory
         )
 
@@ -224,7 +223,7 @@ def search():
 
             metadata = fetch_catalog_metadata(bdr_code)
             if not metadata.get("dwc_catalog_number_ssi"):
-                metadata["dwc_catalog_number_ssi"] = f"PBRU{bdr_code}"
+                metadata["dwc_catalog_number_ssi"] = f"PBRU {bdr_code}"
 
             if not metadata.get("dwc_accepted_name_usage_ssi"):
                 name_parts = filename.split("_")
@@ -246,7 +245,6 @@ def search():
         pdf_filename, pdf = generate_and_save_pdf(
             matched_img_paths,
             [float(score) for score in top_scores], 
-            results,
             "image"
         )
 
